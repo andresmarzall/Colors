@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualización de Audio en 3D</title>
+    <title>Visualización de Audio - Nube de Puntos</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -67,7 +67,7 @@
         const canvas = document.getElementById('visualizer');
 
         let scene, camera, renderer, analyser, audioContext, source;
-        let bars = [];
+        let points = [];
 
         function init3D() {
             scene = new THREE.Scene();
@@ -78,18 +78,23 @@
             renderer.setSize(canvas.clientWidth, canvas.clientHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
 
-            // Crear barras
-            const geometry = new THREE.BoxGeometry(0.1, 1, 0.1);
-            const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            for (let i = 0; i < 64; i++) {
-                let bar = new THREE.Mesh(geometry, material.clone());
-                bar.material.color.setHSL(i / 64, 1, 0.5);
-                bar.position.x = (i - 32) * 0.2;
-                bars.push(bar);
-                scene.add(bar);
+            // Crear nube de puntos
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            const colors = [];
+            const numPoints = 128;
+
+            for (let i = 0; i < numPoints; i++) {
+                vertices.push(Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 10 - 5);
+                colors.push(Math.random(), Math.random(), Math.random());
             }
 
-            animate();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({ size: 0.2, vertexColors: true });
+            const pointCloud = new THREE.Points(geometry, material);
+            scene.add(pointCloud);
         }
 
         function animate() {
@@ -109,7 +114,7 @@
                     if (!audioContext) {
                         audioContext = new (window.AudioContext || window.webkitAudioContext)();
                         analyser = audioContext.createAnalyser();
-                        analyser.fftSize = 128;
+                        analyser.fftSize = 256;
                         analyser.smoothingTimeConstant = 0.5;
 
                         source = audioContext.createMediaElementSource(audio);
@@ -119,6 +124,7 @@
                         // Iniciar la visualización
                         init3D();
                         visualize();
+                        animate();
                     }
                 });
             }
@@ -127,17 +133,18 @@
         function visualize() {
             const bufferLength = analyser.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
+            const geometry = scene.children[0].geometry;
 
             function update() {
                 requestAnimationFrame(update);
 
                 analyser.getByteFrequencyData(dataArray);
 
-                for (let i = 0; i < bars.length; i++) {
-                    const barHeight = dataArray[i] / 10;
-                    bars[i].scale.y = barHeight;
-                    bars[i].position.y = barHeight / 2;
+                const positions = geometry.attributes.position.array;
+                for (let i = 0; i < dataArray.length; i++) {
+                    positions[i * 3 + 1] = dataArray[i] / 10 - 5; // Ajustar la altura del punto
                 }
+                geometry.attributes.position.needsUpdate = true;
             }
 
             update();
