@@ -14,8 +14,8 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #fff;
-            color: #333;
+            background-color: #000;
+            color: #fff;
             overflow: hidden;
         }
 
@@ -29,11 +29,11 @@
 
         canvas {
             border-radius: 15px;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 0 60px rgba(255, 255, 255, 0.5);
             width: 90%;
             max-width: 900px;
             height: auto;
-            background-color: #fff;
+            background-color: #000;
         }
 
         #controls {
@@ -42,9 +42,9 @@
             flex-direction: column;
             align-items: center;
             padding: 10px;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-            background-color: #f8f8f8;
-            border-top: 1px solid #ddd;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+            background-color: #1f1f1f;
+            border-top: 1px solid #333;
         }
 
         #file-input,
@@ -63,19 +63,19 @@
         }
 
         #file-input {
-            background-color: #007bff;
+            background-color: #1e90ff;
         }
 
         #mic-button {
-            background-color: #28a745;
+            background-color: #32cd32;
         }
 
         #file-input:hover {
-            background-color: #0056b3;
+            background-color: #1c86ee;
         }
 
         #mic-button:hover {
-            background-color: #218838;
+            background-color: #28a745;
         }
 
         #audio-player {
@@ -83,8 +83,8 @@
             width: 100%;
             max-width: 500px;
             border-radius: 8px;
-            background-color: #f1f1f1;
-            border: 1px solid #ddd;
+            background-color: #333;
+            border: 1px solid #444;
         }
 
         @media (max-width: 600px) {
@@ -124,6 +124,7 @@
             if (file) {
                 const fileURL = URL.createObjectURL(file);
                 audioPlayer.src = fileURL;
+                audioPlayer.load(); // Ensure the audio element loads the new source
 
                 audioPlayer.addEventListener('play', function() {
                     setupAudioContext(audioPlayer);
@@ -138,6 +139,7 @@
                 }
                 micButton.textContent = 'Activar Micrófono';
                 microphoneActive = false;
+                setupAudioContext(); // Reset audio context
             } else {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -168,10 +170,20 @@
                 }
 
                 source.connect(analyser);
+                analyser.connect(audioContext.destination);
+
                 visualize();
             } else {
-                source.disconnect();
+                if (source) {
+                    source.disconnect();
+                }
+                if (mediaElement) {
+                    source = audioContext.createMediaElementSource(mediaElement);
+                } else if (stream) {
+                    source = audioContext.createMediaStreamSource(stream);
+                }
                 source.connect(analyser);
+                analyser.connect(audioContext.destination);
             }
         }
 
@@ -190,10 +202,8 @@
                 for (let i = 0; i < bufferLength; i++) {
                     barHeight = dataArray[i];
 
-                    const colorOptions = [
-                        `hsl(${(i * 360 / bufferLength)}, 100%, 70%)`, // Rainbow colors
-                    ];
-                    const color = colorOptions[i % colorOptions.length];
+                    const hue = i * 360 / bufferLength;
+                    const color = `hsl(${hue}, 100%, 50%)`;
 
                     canvasCtx.fillStyle = color;
                     canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
