@@ -77,6 +77,47 @@
                 font-size: 1em;
             }
         }
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+            text-align: center;
+            font-family: 'Consolas', monospace;
+        }
+        .close {
+            color: #000;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: red;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        @media (max-width: 600px) {
+            .modal-content {
+                width: 90%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -89,11 +130,22 @@
             <button id="reset-button">Resetear</button>
         </div>
     </div>
+
+    <!-- Modal -->
+    <div id="info-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-modal">&times;</span>
+            <p>Para seleccionar un nuevo archivo, primero debes hacer clic en "Resetear".</p>
+        </div>
+    </div>
+
     <script>
         const fileInput = document.getElementById('file-input');
         const resetButton = document.getElementById('reset-button');
         const canvas = document.getElementById('visualizer');
         const canvasCtx = canvas.getContext('2d');
+        const modal = document.getElementById('info-modal');
+        const closeModal = document.getElementById('close-modal');
 
         let audioContext, analyser, source;
         let bufferLength, dataArray;
@@ -152,9 +204,19 @@
 
             canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
             fileInput.value = '';
+            fileInput.disabled = false;  // Enable file input
+        }
+
+        function showModal() {
+            modal.style.display = 'block';
         }
 
         fileInput.addEventListener('change', function(event) {
+            if (fileInput.disabled) {
+                showModal();
+                return;
+            }
+
             const file = event.target.files[0];
             if (file) {
                 const fileURL = URL.createObjectURL(file);
@@ -177,10 +239,22 @@
                         analyser.connect(audioContext.destination);
                     }
                 });
+
+                fileInput.disabled = true;  // Disable file input while playing
             }
         });
 
         resetButton.addEventListener('click', reset);
+
+        closeModal.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+
+        window.addEventListener('click', function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>
