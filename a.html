@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Search with Audio Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+        #search-input {
+            width: 300px;
+            padding: 10px;
+            margin-right: 10px;
+        }
+        #search-button {
+            padding: 10px;
+        }
+        .video-container {
+            margin-top: 20px;
+        }
+        .video-item {
+            margin-bottom: 20px;
+        }
+        iframe {
+            width: 560px;
+            height: 315px;
+            display: block;
+        }
+        #visualizer {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translateY(-50%);
+            width: 450px;
+            height: 200px;
+            background-color: #000;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <h1>Search YouTube</h1>
+    <input type="text" id="search-input" placeholder="Search for videos...">
+    <button id="search-button">Search</button>
+
+    <div class="video-container" id="video-container"></div>
+    <div id="visualizer">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var bars = document.getElementsByClassName('bar');
+            var player;
+
+            $('#search-button').click(function() {
+                var query = $('#search-input').val();
+                var apiKey = 'AIzaSyB_VoxqgDQzIxRU7Srv3JbiS8HCKlEDLrk'; // Reemplaza con tu API Key de YouTube
+                var url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&key=${apiKey}&type=video&maxResults=10`;
+
+                $.ajax({
+                    url: url,
+                    method: 'GET',
+                    success: function(response) {
+                        $('#video-container').empty();
+                        response.items.forEach(function(video, index) {
+                            var videoHtml = `
+                                <div class="video-item">
+                                    <h3>${video.snippet.title}</h3>
+                                    <iframe id="video-player-${index}" src="https://www.youtube.com/embed/${video.id.videoId}?enablejsapi=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                                </div>`;
+                            $('#video-container').append(videoHtml);
+                        });
+
+                        // Crear un nuevo jugador para el primer video
+                        player = new YT.Player('video-player-0', {
+                            events: {
+                                'onStateChange': onPlayerStateChange
+                            }
+                        });
+                    },
+                    error: function() {
+                        $('#video-container').html('<p>Error loading videos. Please try again.</p>');
+                    }
+                });
+            });
+
+            function onPlayerStateChange(event) {
+                if (event.data == YT.PlayerState.PLAYING) {
+                    simulateVisualizer();
+                }
+            }
+
+            function simulateVisualizer() {
+                setInterval(function() {
+                    for (var i = 0; i < bars.length; i++) {
+                        var randomHeight = Math.floor(Math.random() * 100);
+                        bars[i].style.height = randomHeight + 'px';
+                    }
+                }, 100); // Actualiza cada 100ms
+            }
+        });
+    </script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
