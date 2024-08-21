@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualización de Audio - Círculo</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90%;
+            max-width: 800px;
+            padding: 20px;
+            background: #333;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+        canvas {
+            width: 100%;
+            height: 400px;
+            border-radius: 50%;
+            background-color: #222;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+        input[type="file"] {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #222;
+            color: #fff;
+            cursor: pointer;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            gap: 10px;
+        }
+        @media (max-width: 600px) {
+            canvas {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="visualizer"></canvas>
+        <div class="controls">
+            <input type="file" id="file-input" accept="audio/*">
+        </div>
+    </div>
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
+
+        let audioContext, analyser, source;
+        let bufferLength, dataArray;
+
+        function init() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
+
+            function draw() {
+                requestAnimationFrame(draw);
+
+                analyser.getByteFrequencyData(dataArray);
+                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const radius = Math.min(canvas.width, canvas.height) / 2;
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const barWidth = (2 * Math.PI) / bufferLength;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = dataArray[i];
+                    const x = centerX + Math.sin(i * barWidth) * (radius - barHeight / 2);
+                    const y = centerY + Math.cos(i * barWidth) * (radius - barHeight / 2);
+                    const barLength = barHeight / 2;
+
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(centerX, centerY, radius - barHeight / 2, i * barWidth, (i + 1) * barWidth);
+                    canvasCtx.lineTo(x, y);
+                    canvasCtx.closePath();
+
+                    canvasCtx.fillStyle = `hsl(${(i / bufferLength) * 360}, 100%, 50%)`;
+                    canvasCtx.fill();
+                }
+            }
+
+            draw();
+        }
+
+        fileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const fileURL = URL.createObjectURL(file);
+                const audio = new Audio(fileURL);
+                audio.controls = true;
+                document.body.appendChild(audio);
+
+                audio.addEventListener('play', function() {
+                    if (!audioContext) {
+                        init();
+                        source = audioContext.createMediaElementSource(audio);
+                        source.connect(analyser);
+                        analyser.connect(audioContext.destination);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
