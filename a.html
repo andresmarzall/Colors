@@ -6,188 +6,90 @@
     <title>Audio Visualizer</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
+            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             height: 100vh;
-            background-color: #000;
-            color: #fff;
-            overflow: hidden;
+            margin: 0;
+            background-color: #fff;
+            color: #000;
         }
-
-        #visualizer-container {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-            flex: 1;
-        }
-
-        canvas {
-            border-radius: 15px;
-            box-shadow: 0 0 60px rgba(255, 255, 255, 0.5);
-            width: 90%;
-            max-width: 900px;
-            height: auto;
-            background-color: #000;
-        }
-
-        #controls {
-            width: 100%;
+        .container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 10px;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-            background-color: #1f1f1f;
-            border-top: 1px solid #333;
-        }
-
-        #file-input,
-        #mic-button {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            cursor: pointer;
-            font-size: 1rem;
-            margin: 5px;
-            transition: background-color 0.3s ease;
             width: 100%;
-            max-width: 200px;
-            text-align: center;
+            max-width: 800px;
+            padding: 20px;
         }
-
-        #file-input {
-            background-color: #1e90ff;
-        }
-
-        #mic-button {
-            background-color: #32cd32;
-        }
-
-        #file-input:hover {
-            background-color: #1c86ee;
-        }
-
-        #mic-button:hover {
-            background-color: #28a745;
-        }
-
-        #audio-player {
-            margin: 10px 0;
+        canvas {
+            border: 1px solid #ccc;
             width: 100%;
-            max-width: 500px;
-            border-radius: 8px;
-            background-color: #333;
-            border: 1px solid #444;
+            height: 300px;
+            margin-bottom: 20px;
         }
-
-        @media (max-width: 600px) {
-            canvas {
-                height: 200px;
-            }
+        input[type="file"] {
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
         }
     </style>
 </head>
 <body>
-    <div id="visualizer-container">
-        <canvas id="visualizer" width="900" height="400"></canvas>
+    <div class="container">
+        <canvas id="visualizer"></canvas>
+        <div class="controls">
+            <input type="file" id="file-input" accept="audio/*">
+        </div>
     </div>
-    <div id="controls">
-        <input type="file" id="file-input" accept="audio/*">
-        <button id="mic-button">Activar Micrófono</button>
-    </div>
-    <audio id="audio-player" controls></audio>
 
     <script>
         const fileInput = document.getElementById('file-input');
-        const micButton = document.getElementById('mic-button');
-        const audioPlayer = document.getElementById('audio-player');
         const canvas = document.getElementById('visualizer');
         const canvasCtx = canvas.getContext('2d');
 
         let audioContext;
         let analyser;
+        let source;
         let dataArray;
         let bufferLength;
-        let source;
-        let microphoneStream;
-        let microphoneActive = false;
 
         fileInput.addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (file) {
                 const fileURL = URL.createObjectURL(file);
-                audioPlayer.src = fileURL;
-                audioPlayer.load(); // Ensure the audio element loads the new source
+                const audio = new Audio(fileURL);
+                audio.controls = true;
+                document.body.appendChild(audio);
 
-                audioPlayer.addEventListener('play', function() {
-                    setupAudioContext(audioPlayer);
+                audio.addEventListener('play', function() {
+                    if (!audioContext) {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        analyser = audioContext.createAnalyser();
+                        analyser.fftSize = 256;
+
+                        bufferLength = analyser.frequencyBinCount;
+                        dataArray = new Uint8Array(bufferLength);
+
+                        source = audioContext.createMediaElementSource(audio);
+                        source.connect(analyser);
+                        analyser.connect(audioContext.destination);
+
+                        visualizeParticles();
+                    }
                 });
             }
         });
 
-        micButton.addEventListener('click', async function() {
-            if (microphoneActive) {
-                if (microphoneStream) {
-                    microphoneStream.getTracks().forEach(track => track.stop());
-                }
-                micButton.textContent = 'Activar Micrófono';
-                microphoneActive = false;
-                setupAudioContext(); // Reset audio context
-            } else {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    setupAudioContext(null, stream);
-                    micButton.textContent = 'Desactivar Micrófono';
-                    microphoneActive = true;
-                } catch (err) {
-                    console.error('Error al acceder al micrófono:', err);
-                    alert('No se pudo acceder al micrófono.');
-                }
-            }
-        });
+        function visualizeParticles() {
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
-        function setupAudioContext(mediaElement = null, stream = null) {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 512;
-
-                bufferLength = analyser.frequencyBinCount;
-                dataArray = new Uint8Array(bufferLength);
-
-                if (mediaElement) {
-                    source = audioContext.createMediaElementSource(mediaElement);
-                } else if (stream) {
-                    source = audioContext.createMediaStreamSource(stream);
-                    microphoneStream = stream;
-                }
-
-                source.connect(analyser);
-                analyser.connect(audioContext.destination);
-
-                visualize();
-            } else {
-                if (source) {
-                    source.disconnect();
-                }
-                if (mediaElement) {
-                    source = audioContext.createMediaElementSource(mediaElement);
-                } else if (stream) {
-                    source = audioContext.createMediaStreamSource(stream);
-                }
-                source.connect(analyser);
-                analyser.connect(audioContext.destination);
-            }
-        }
-
-        function visualize() {
             function draw() {
                 requestAnimationFrame(draw);
 
@@ -195,20 +97,19 @@
 
                 canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
-                const barWidth = (canvas.width / bufferLength) * 2.5;
-                let barHeight;
-                let x = 0;
+                const particleCount = bufferLength;
+                const angleStep = 2 * Math.PI / particleCount;
 
-                for (let i = 0; i < bufferLength; i++) {
-                    barHeight = dataArray[i];
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = i * angleStep;
+                    const radius = dataArray[i] / 2;
+                    const x = canvas.width / 2 + Math.cos(angle) * radius;
+                    const y = canvas.height / 2 + Math.sin(angle) * radius;
 
-                    const hue = i * 360 / bufferLength;
-                    const color = `hsl(${hue}, 100%, 50%)`;
-
-                    canvasCtx.fillStyle = color;
-                    canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
-
-                    x += barWidth + 1;
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(x, y, 3, 0, 2 * Math.PI);
+                    canvasCtx.fillStyle = `hsl(${i * 360 / particleCount}, 100%, 60%)`;
+                    canvasCtx.fill();
                 }
             }
 
