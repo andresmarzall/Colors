@@ -10,18 +10,35 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
             height: 100vh;
             margin: 0;
             background-color: #000;
             color: #fff;
         }
 
+        #visualizer-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        canvas {
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
+            width: 90%;
+            max-width: 800px;
+            height: auto;
+        }
+
         #controls {
+            width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
             margin-bottom: 20px;
+            padding: 10px;
         }
 
         #file-input,
@@ -53,14 +70,6 @@
             border-radius: 5px;
         }
 
-        canvas {
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-            width: 90%;
-            max-width: 800px;
-            height: auto;
-        }
-
         @media (max-width: 600px) {
             canvas {
                 height: 200px;
@@ -69,12 +78,14 @@
     </style>
 </head>
 <body>
+    <div id="visualizer-container">
+        <canvas id="visualizer" width="800" height="300"></canvas>
+    </div>
     <div id="controls">
         <input type="file" id="file-input" accept="audio/*">
         <button id="mic-button">Activar Micrófono</button>
     </div>
     <audio id="audio-player" controls></audio>
-    <canvas id="visualizer" width="800" height="300"></canvas>
 
     <script>
         const fileInput = document.getElementById('file-input');
@@ -88,6 +99,8 @@
         let dataArray;
         let bufferLength;
         let source;
+        let microphoneStream;
+        let microphoneActive = false;
 
         fileInput.addEventListener('change', function(event) {
             const file = event.target.files[0];
@@ -96,21 +109,31 @@
                 audioPlayer.src = fileURL;
 
                 audioPlayer.addEventListener('play', function() {
-                    setupAudioContext();
+                    setupAudioContext(audioPlayer);
                 });
             }
         });
 
         micButton.addEventListener('click', async function() {
-            if (!audioContext) setupAudioContext();
-
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            source = audioContext.createMediaStreamSource(stream);
-            source.connect(analyser);
-            visualize();
+            if (microphoneActive) {
+                // Stop the microphone stream
+                microphoneStream.getTracks().forEach(track => track.stop());
+                micButton.textContent = 'Activar Micrófono';
+                microphoneActive = false;
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    setupAudioContext(null, stream);
+                    micButton.textContent = 'Desactivar Micrófono';
+                    microphoneActive = true;
+                } catch (err) {
+                    console.error('Error al acceder al micrófono:', err);
+                    alert('No se pudo acceder al micrófono.');
+                }
+            }
         });
 
-        function setupAudioContext() {
+        function setupAudioContext(mediaElement = null, stream = null) {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
@@ -119,11 +142,15 @@
                 bufferLength = analyser.frequencyBinCount;
                 dataArray = new Uint8Array(bufferLength);
 
-                if (audioPlayer.src) {
-                    source = audioContext.createMediaElementSource(audioPlayer);
-                    source.connect(analyser);
-                    analyser.connect(audioContext.destination);
+                if (mediaElement) {
+                    source = audioContext.createMediaElementSource(mediaElement);
+                } else if (stream) {
+                    source = audioContext.createMediaStreamSource(stream);
+                    microphoneStream = stream;
                 }
+
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
 
                 visualize();
             }
@@ -147,11 +174,10 @@
                 for (let i = 0; i < bufferLength; i++) {
                     barHeight = dataArray[i];
 
-                    const red = 50;
-                    const green = barHeight + 100;
-                    const blue = 250 * (i / bufferLength);
+                    const colorOptions = ['rgba(255, 165, 0, 1)', 'rgba(255, 255, 255, 1)', 'rgba(255, 192, 203, 1)', 'rgba(255, 255, 0, 1)'];
+                    const color = colorOptions[i % colorOptions.length];
 
-                    canvasCtx.fillStyle = `rgb(${red},${green},${blue})`;
+                    canvasCtx.fillStyle = color;
                     canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
 
                     x += barWidth + 1;
