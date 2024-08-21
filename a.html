@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizador de Audio Radial</title>
+    <title>Espectrograma de Audio</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -33,7 +33,7 @@
             height: 300px;
             margin-bottom: 20px;
             border-radius: 8px;
-            background-color: #fff;
+            background-color: #000;
         }
         input[type="file"] {
             margin-bottom: 20px;
@@ -88,7 +88,7 @@
                     if (!audioContext) {
                         audioContext = new (window.AudioContext || window.webkitAudioContext)();
                         analyser = audioContext.createAnalyser();
-                        analyser.fftSize = 256;
+                        analyser.fftSize = 512;  // Aumenta el tamaño de FFT para más detalles
 
                         bufferLength = analyser.frequencyBinCount;
                         dataArray = new Uint8Array(bufferLength);
@@ -97,37 +97,38 @@
                         source.connect(analyser);
                         analyser.connect(audioContext.destination);
 
-                        visualizeRadial();
+                        visualizeSpectrogram();
                     }
                 });
             }
         });
 
-        function visualizeRadial() {
+        function visualizeSpectrogram() {
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const barWidth = canvasWidth / bufferLength;
+            let x = 0;
+
             function draw() {
                 requestAnimationFrame(draw);
 
                 analyser.getByteFrequencyData(dataArray);
 
-                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-
-                const radius = canvas.width / 2;
-                const angleStep = 2 * Math.PI / bufferLength;
-                const centerX = canvas.width / 2;
-                const centerY = canvas.height / 2;
+                canvasCtx.clearRect(0, 0, canvasWidth, canvasHeight);
 
                 for (let i = 0; i < bufferLength; i++) {
                     const barHeight = dataArray[i] / 2;
-                    const angle = i * angleStep;
-                    const x = centerX + Math.cos(angle) * barHeight;
-                    const y = centerY + Math.sin(angle) * barHeight;
+                    const hue = (i / bufferLength) * 360;
+                    const saturation = 100;
+                    const lightness = 50;
 
-                    canvasCtx.beginPath();
-                    canvasCtx.arc(centerX, centerY, barHeight, angle, angle + angleStep);
-                    canvasCtx.lineTo(centerX, centerY);
-                    canvasCtx.fillStyle = `hsl(${i * 360 / bufferLength}, 100%, 70%)`;
-                    canvasCtx.fill();
+                    canvasCtx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                    canvasCtx.fillRect(x, canvasHeight - barHeight, barWidth, barHeight);
+
+                    x += barWidth;
                 }
+
+                x = 0;  // Reiniciar x para dibujar desde el inicio
             }
 
             draw();
