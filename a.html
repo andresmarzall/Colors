@@ -55,6 +55,7 @@
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
             cursor: pointer;
             transition: background 0.3s ease, transform 0.3s ease;
+            text-align: center;
         }
 
         .audio-card:hover {
@@ -66,7 +67,6 @@
             font-size: 14px;
             color: #555;
             display: block;
-            text-align: center;
         }
 
         .audio-player {
@@ -172,14 +172,17 @@
         let audioFiles = [];
         let currentIndex = -1;
         let isPlaying = false;
+        let audioElement = new Audio();
         let audioContext = new (window.AudioContext || window.webkitAudioContext)();
         let analyser = audioContext.createAnalyser();
         let sourceNode;
         let canvas = document.getElementById('audio-visualizer');
         let canvasCtx = canvas.getContext('2d');
-        let bufferLength;
-        let dataArray;
-        let audioElement = new Audio();
+        let bufferLength = analyser.frequencyBinCount;
+        let dataArray = new Uint8Array(bufferLength);
+
+        analyser.fftSize = 256;
+        analyser.getByteFrequencyData(dataArray);
 
         function addAudioToList(name, url) {
             audioFiles.push({ name: name, url: url });
@@ -218,18 +221,23 @@
         function playAudio(index) {
             if (index < 0 || index >= audioFiles.length) return;
 
+            if (sourceNode) {
+                sourceNode.disconnect();
+            }
+
             audioElement.src = audioFiles[index].url;
             audioElement.load();
             audioElement.play();
 
-            // Conectamos el audio al visualizador
-            let source = audioContext.createMediaElementSource(audioElement);
-            source.connect(analyser);
+            // Connect audio to the visualizer
+            sourceNode = audioContext.createMediaElementSource(audioElement);
+            sourceNode.connect(analyser);
             analyser.connect(audioContext.destination);
 
             isPlaying = true;
             currentIndex = index;
             updateControls();
+            visualize();
         }
 
         function updateControls() {
@@ -261,27 +269,30 @@
         });
 
         function visualize() {
-            if (!analyser) return;
-
-            bufferLength = analyser.frequencyBinCount;
-            dataArray = new Uint8Array(bufferLength);
-
             canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-            analyser.getByteFrequencyData(dataArray);
 
-            let barWidth = (canvas.width / bufferLength) * 2.5;
-            let barHeight;
-            let x = 0;
+            function draw() {
+                requestAnimationFrame(draw);
 
-            for (let i = 0; i < bufferLength; i++) {
-                barHeight = dataArray[i];
-                let hue = (i / bufferLength) * 360;
-                canvasCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-                canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
-                x += barWidth + 1;
+                analyser.getByteFrequencyData(dataArray);
+
+                canvasCtx.fillStyle = '#333';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+                let barWidth = (canvas.width / bufferLength) * 2.5;
+                let barHeight;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    barHeight = dataArray[i];
+                    let hue = (i / bufferLength) * 360;
+                    canvasCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+                    canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+                    x += barWidth + 1;
+                }
             }
 
-            requestAnimationFrame(visualize);
+            draw();
         }
 
         audioElement.addEventListener('play', function () {
@@ -292,20 +303,11 @@
             isPlaying = false;
             updateControls();
         });
-
-        audioElement.addEventListener('ended', function () {
+        audioElement.addEventListener('ended', 
+function () {
             isPlaying = false;
             updateControls();
         });
-
-        function updateProgress() {
-            var duration = audioElement.duration;
-            var currentTime = audioElement.currentTime;
-            var progress = (currentTime / duration) * 100;
-            $('#progress-bar').width(progress + '%');
-        }
-
-        audioElement.addEventListener('timeupdate', updateProgress);
     });
 </script>
 </body>
