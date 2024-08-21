@@ -3,41 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Visualizer</title>
+    <title>Visualizador de Audio Radial</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
             margin: 0;
-            background-color: #fff;
-            color: #000;
+            background-color: #f0f0f0;
+            color: #333;
         }
         .container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 100%;
+            width: 90%;
             max-width: 800px;
             padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         canvas {
-            border: 1px solid #ccc;
+            border: 1px solid #ddd;
             width: 100%;
             height: 300px;
             margin-bottom: 20px;
+            border-radius: 8px;
+            background-color: #fff;
         }
         input[type="file"] {
             margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fafafa;
+            color: #333;
+            cursor: pointer;
         }
         .controls {
             display: flex;
             justify-content: center;
-            gap: 10px;
             width: 100%;
+            gap: 10px;
+        }
+        @media (max-width: 600px) {
+            canvas {
+                height: 200px;
+            }
         }
     </style>
 </head>
@@ -81,15 +97,13 @@
                         source.connect(analyser);
                         analyser.connect(audioContext.destination);
 
-                        visualizeParticles();
+                        visualizeRadial();
                     }
                 });
             }
         });
 
-        function visualizeParticles() {
-            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-
+        function visualizeRadial() {
             function draw() {
                 requestAnimationFrame(draw);
 
@@ -97,18 +111,21 @@
 
                 canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
-                const particleCount = bufferLength;
-                const angleStep = 2 * Math.PI / particleCount;
+                const radius = canvas.width / 2;
+                const angleStep = 2 * Math.PI / bufferLength;
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
 
-                for (let i = 0; i < particleCount; i++) {
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = dataArray[i] / 2;
                     const angle = i * angleStep;
-                    const radius = dataArray[i] / 2;
-                    const x = canvas.width / 2 + Math.cos(angle) * radius;
-                    const y = canvas.height / 2 + Math.sin(angle) * radius;
+                    const x = centerX + Math.cos(angle) * barHeight;
+                    const y = centerY + Math.sin(angle) * barHeight;
 
                     canvasCtx.beginPath();
-                    canvasCtx.arc(x, y, 3, 0, 2 * Math.PI);
-                    canvasCtx.fillStyle = `hsl(${i * 360 / particleCount}, 100%, 60%)`;
+                    canvasCtx.arc(centerX, centerY, barHeight, angle, angle + angleStep);
+                    canvasCtx.lineTo(centerX, centerY);
+                    canvasCtx.fillStyle = `hsl(${i * 360 / bufferLength}, 100%, 70%)`;
                     canvasCtx.fill();
                 }
             }
