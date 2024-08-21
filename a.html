@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espectrograma de Audio</title>
+    <title>Visualización de Audio en 3D</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -13,8 +13,8 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
-            color: #333;
+            background-color: #000;
+            color: #fff;
         }
         .container {
             display: flex;
@@ -23,25 +23,22 @@
             width: 90%;
             max-width: 800px;
             padding: 20px;
-            background: #fff;
+            background: #333;
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
         }
         canvas {
-            border: 1px solid #ddd;
             width: 100%;
-            height: 300px;
-            margin-bottom: 20px;
+            height: 500px;
             border-radius: 8px;
-            background-color: #000;
         }
         input[type="file"] {
             margin-bottom: 20px;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid #444;
             border-radius: 4px;
-            background: #fafafa;
-            color: #333;
+            background: #222;
+            color: #fff;
             cursor: pointer;
         }
         .controls {
@@ -52,7 +49,7 @@
         }
         @media (max-width: 600px) {
             canvas {
-                height: 200px;
+                height: 300px;
             }
         }
     </style>
@@ -64,17 +61,41 @@
             <input type="file" id="file-input" accept="audio/*">
         </div>
     </div>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         const fileInput = document.getElementById('file-input');
         const canvas = document.getElementById('visualizer');
-        const canvasCtx = canvas.getContext('2d');
 
-        let audioContext;
-        let analyser;
-        let source;
-        let dataArray;
-        let bufferLength;
+        let scene, camera, renderer, analyser, audioContext, source;
+        let bars = [];
+
+        function init3D() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            renderer = new THREE.WebGLRenderer({ canvas });
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // Crear barras
+            const geometry = new THREE.BoxGeometry(0.1, 1, 0.1);
+            const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            for (let i = 0; i < 64; i++) {
+                let bar = new THREE.Mesh(geometry, material.clone());
+                bar.material.color.setHSL(i / 64, 1, 0.5);
+                bar.position.x = (i - 32) * 0.2;
+                bars.push(bar);
+                scene.add(bar);
+            }
+
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
 
         fileInput.addEventListener('change', function(event) {
             const file = event.target.files[0];
@@ -88,50 +109,38 @@
                     if (!audioContext) {
                         audioContext = new (window.AudioContext || window.webkitAudioContext)();
                         analyser = audioContext.createAnalyser();
-                        analyser.fftSize = 512;  // Aumenta el tamaño de FFT para más detalles
-
-                        bufferLength = analyser.frequencyBinCount;
-                        dataArray = new Uint8Array(bufferLength);
+                        analyser.fftSize = 128;
+                        analyser.smoothingTimeConstant = 0.5;
 
                         source = audioContext.createMediaElementSource(audio);
                         source.connect(analyser);
                         analyser.connect(audioContext.destination);
 
-                        visualizeSpectrogram();
+                        // Iniciar la visualización
+                        init3D();
+                        visualize();
                     }
                 });
             }
         });
 
-        function visualizeSpectrogram() {
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
-            const barWidth = canvasWidth / bufferLength;
-            let x = 0;
+        function visualize() {
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
 
-            function draw() {
-                requestAnimationFrame(draw);
+            function update() {
+                requestAnimationFrame(update);
 
                 analyser.getByteFrequencyData(dataArray);
 
-                canvasCtx.clearRect(0, 0, canvasWidth, canvasHeight);
-
-                for (let i = 0; i < bufferLength; i++) {
-                    const barHeight = dataArray[i] / 2;
-                    const hue = (i / bufferLength) * 360;
-                    const saturation = 100;
-                    const lightness = 50;
-
-                    canvasCtx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-                    canvasCtx.fillRect(x, canvasHeight - barHeight, barWidth, barHeight);
-
-                    x += barWidth;
+                for (let i = 0; i < bars.length; i++) {
+                    const barHeight = dataArray[i] / 10;
+                    bars[i].scale.y = barHeight;
+                    bars[i].position.y = barHeight / 2;
                 }
-
-                x = 0;  // Reiniciar x para dibujar desde el inicio
             }
 
-            draw();
+            update();
         }
     </script>
 </body>
