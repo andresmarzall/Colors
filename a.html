@@ -4,14 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visualización de Audio - Barras</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Consolas', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
             background-color: #fff;
             color: #000;
-            margin: 0;
-            padding-top: 56px; /* Espacio para el navbar */
         }
         .container {
             display: flex;
@@ -23,7 +26,6 @@
             background: #f5f5f5;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            margin-top: 20px;
         }
         canvas {
             width: 100%;
@@ -51,6 +53,15 @@
             gap: 10px;
             margin-top: 10px;
         }
+        h1 {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+            text-align: center;
+            color: #000;
+            opacity: 0; /* Start hidden */
+            transition: opacity 1s ease-in-out;
+        }
         p {
             font-size: 1.1em;
             margin: 0 0 20px 0;
@@ -61,22 +72,11 @@
             canvas {
                 height: 250px;
             }
+            h1 {
+                font-size: 1.8em;
+            }
             p {
                 font-size: 1em;
-            }
-        }
-        /* Título animado */
-        #dynamic-title {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #fff;
-            text-align: center;
-            opacity: 0; /* Empieza oculto */
-            transition: opacity 1s ease-in-out;
-        }
-        @media (max-width: 600px) {
-            #dynamic-title {
-                font-size: 1.8em;
             }
         }
         /* Modal Styles */
@@ -123,15 +123,8 @@
     </style>
 </head>
 <body>
-
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-        <div class="container">
-            <a class="navbar-brand mx-auto" id="dynamic-title">Sound Vibrations</a>
-        </div>
-    </nav>
-
     <div class="container">
+        <h1 id="dynamic-title">Sound Vibrations</h1>
         <p>Sube un archivo de audio y observa su visualización en tiempo real con gráficos de barras en colores arcoíris. Ideal para análisis de frecuencias y experimentación con sonidos.</p>
         <canvas id="visualizer"></canvas>
         <div class="controls">
@@ -285,9 +278,9 @@
             }
         });
 
-      // Initialize the title animation
-const titleText = "Sound Vibrations";
-fadeInText(title, titleText, 100);
-</script>
+        // Initialize the title animation
+        const titleText = "Sound Vibrations";
+        fadeInText(title, titleText, 100);
+    </script>
 </body>
 </html>
