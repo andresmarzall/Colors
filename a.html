@@ -223,12 +223,14 @@
                 index++;
                 if (index >= text.length) {
                     clearInterval(interval);
+                    setTimeout(() => fadeOutText(element, 1000), 2000); // Wait 2 seconds before starting to fade out
                 }
             }, speed);
         }
 
         function fadeOutText(element, speed) {
             element.style.opacity = 0;
+            setTimeout(() => fadeInText(element, titleText, 100), 2000); // Wait 2 seconds before starting to fade in again
         }
 
         fileInput.addEventListener('change', function(event) {
@@ -279,9 +281,6 @@
         // Initialize the title animation
         const titleText = "Sound Vibrations";
         fadeInText(title, titleText, 100);
-        setTimeout(() => {
-            fadeOutText(title, 1000);
-        }, 5000); // Fade out after 5 seconds
     </script>
 </body>
 </html>
