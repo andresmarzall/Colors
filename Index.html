@@ -203,21 +203,20 @@
             // Escalar el contexto de dibujo para adaptarse a la alta resolución
             canvasCtx.scale(dpr, dpr);
 
-            const barWidth = canvas.width / bufferLength / dpr;
-
             function draw() {
                 requestAnimationFrame(draw);
 
                 analyser.getByteFrequencyData(dataArray);
                 canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
+                const barWidth = canvas.width / bufferLength;
                 let x = 0;
                 for (let i = 0; i < bufferLength; i++) {
-                    const barHeight = dataArray[i] / 2;
+                    const barHeight = dataArray[i];
                     const hue = (i / bufferLength) * 360;
                     canvasCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-                    canvasCtx.fillRect(x, canvas.height / dpr - barHeight, barWidth, barHeight);
-                    x += barWidth + 1;
+                    canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+                    x += barWidth;
                 }
             }
 
