@@ -13,7 +13,7 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
-            background-color: transparent;
+            background-color: #fff;
             color: #000;
         }
         .container {
@@ -59,6 +59,8 @@
             margin: 0 0 10px 0;
             text-align: center;
             color: #000;
+            opacity: 0; /* Start hidden */
+            transition: opacity 1s ease-in-out;
         }
         p {
             font-size: 1.1em;
@@ -122,7 +124,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Sound Vibrations</h1>
+        <h1 id="dynamic-title">Sound Vibrations</h1>
         <p>Sube un archivo de audio y observa su visualización en tiempo real con gráficos de barras en colores arcoíris. Ideal para análisis de frecuencias y experimentación con sonidos.</p>
         <canvas id="visualizer"></canvas>
         <div class="controls">
@@ -146,6 +148,7 @@
         const canvasCtx = canvas.getContext('2d');
         const modal = document.getElementById('info-modal');
         const closeModal = document.getElementById('close-modal');
+        const title = document.getElementById('dynamic-title');
 
         let audioContext, analyser, source;
         let bufferLength, dataArray;
@@ -211,6 +214,23 @@
             modal.style.display = 'block';
         }
 
+        function fadeInText(element, text, speed) {
+            let index = 0;
+            element.textContent = '';
+            element.style.opacity = 1;
+            const interval = setInterval(() => {
+                element.textContent += text[index];
+                index++;
+                if (index >= text.length) {
+                    clearInterval(interval);
+                }
+            }, speed);
+        }
+
+        function fadeOutText(element, speed) {
+            element.style.opacity = 0;
+        }
+
         fileInput.addEventListener('change', function(event) {
             if (fileInput.disabled) {
                 showModal();
@@ -255,6 +275,13 @@
                 modal.style.display = 'none';
             }
         });
+
+        // Initialize the title animation
+        const titleText = "Sound Vibrations";
+        fadeInText(title, titleText, 100);
+        setTimeout(() => {
+            fadeOutText(title, 1000);
+        }, 5000); // Fade out after 5 seconds
     </script>
 </body>
 </html>
