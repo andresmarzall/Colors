@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -25,19 +26,28 @@
             padding: 10px 0;
         }
 
-        .navbar h1 { 
+        #dynamic-title {
             font-size: 2.5em;
             font-weight: bold;
             margin: 0;
             color: #fff; /* Título blanco */
             opacity: 0; /* Start hidden */
             transition: opacity 1s ease-in-out;
+            animation: fadeInOut 5s infinite; /* Animation added */
         }
-         
-        #dynamic-tittle {
-            color: #fff;
+
+        @keyframes fadeInOut {
+            0% {
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
         }
-        
+
         .container {
             display: flex;
             flex-direction: column;
@@ -92,7 +102,7 @@
             canvas {
                 height: 250px;
             }
-            .navbar h1 {
+            #dynamic-title {
                 font-size: 1.8em;
             }
             p {
@@ -242,25 +252,6 @@
             modal.style.display = 'block';
         }
 
-        function fadeInText(element, text, speed) {
-            let index = 0;
-            element.textContent = '';
-            element.style.opacity = 1;
-            const interval = setInterval(() => {
-                element.textContent += text[index];
-                index++;
-                if (index >= text.length) {
-                    clearInterval(interval);
-                    setTimeout(() => fadeOutText(element, 1000), 2000); // Wait 2 seconds before starting to fade out
-                }
-            }, speed);
-        }
-
-        function fadeOutText(element, speed) {
-            element.style.opacity = 0;
-            setTimeout(() => fadeInText(element, titleText, 100), 2000); // Wait 2 seconds before starting to fade in again
-        }
-
         fileInput.addEventListener('change', function(event) {
             if (fileInput.disabled) {
                 showModal();
@@ -305,9 +296,10 @@
                 modal.style.display = 'none';
             }
         });
-
-        // Initialize the title animation
-        const titleText = "Sound Vibrations";
-</script>
+    </script>
 </body>
 </html>
+```
+
+### Resumen de los Cambios:
+- Añadido CSS específico para el `#dynamic-title` con animación `fadeInOut` que hace que el título parpadee. La animación hace que el texto sea visible y luego invisible en un ciclo continuo.
