@@ -8,6 +8,7 @@
             font-family: 'Consolas', monospace;
             margin: 0;
             padding: 0;
+            background-color: #000; /* Asegúrate de que el color de fondo sea adecuado */
             background-image: url('./bg.jpeg');
             background-size: cover;
             background-position: center;
@@ -51,20 +52,22 @@
             }
         }
 
-        .audio-container {
+        .container {
             position: relative;
-            max-width: 100%;
-            margin: 0 auto;
-            text-align: center;
-        }
-
-        .responsive-canvas {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
             width: 100%;
-            height: auto;
-            background-color: black;
+            max-width: 800px;
+            margin-top: 20px; /* Ajuste para evitar que el contenido se solape con la navbar */
+            box-sizing: border-box;
         }
 
         canvas {
+            width: 100%;
+            height: 200px;
             border-radius: 10px;
             background-color: #000;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -166,84 +169,116 @@
     <div class="navbar">
         <h1 id="dynamic-title">Audio frequencies</h1>
     </div>
-    <div class="audio-container">
-        <input type="file" id="audio-upload" accept="audio/*">
-        <audio id="audio-player" controls style="display: none;">
-            <source id="audio-source" type="audio/mpeg">
-            Your browser does not support the audio element.
-        </audio>
-        <canvas id="spectrogram" class="responsive-canvas" style="display: none;"></canvas>
+    <div class="container">
+        <p>Select or drag an audio file to see its frequencies in real time with colored bar graphs.</p>
+        <canvas id="visualizer"></canvas>
+        <div class="controls">
+            <input type="file" id="file-input" accept="audio/*">
+            <button id="reset-button">Reset</button>
+        </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const audioElement = document.getElementById('audio-player');
-            const audioSource = document.getElementById('audio-source');
-            const canvas = document.getElementById('spectrogram');
-            const canvasCtx = canvas.getContext('2d');
-            const analyser = audioContext.createAnalyser();
+        const fileInput = document.getElementById('file-input');
+        const resetButton = document.getElementById('reset-button');
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
+        const title = document.getElementById('dynamic-title');
+        let audioContext, analyser, source;
+        let bufferLength, dataArray;
+        let audioElement;
 
-            analyser.fftSize = 2048;
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
+        function init() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
 
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
+            canvas.width = canvas.offsetWidth; // Ajuste del ancho del canvas
+            canvas.height = canvas.offsetHeight; // Ajuste de la altura del canvas
 
-            function drawSpectrogram() {
-                requestAnimationFrame(drawSpectrogram);
+            function draw() {
+                requestAnimationFrame(draw);
 
                 analyser.getByteFrequencyData(dataArray);
-
-                canvasCtx.fillStyle = 'black';
+                canvasCtx.fillStyle = '#000';
                 canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-                let barWidth = (canvas.width / bufferLength) * 2.5;
-                let barHeight;
+                const barWidth = (canvas.width / bufferLength) * 2.5; // Ajuste del ancho de la barra
                 let x = 0;
-
                 for (let i = 0; i < bufferLength; i++) {
-                    barHeight = dataArray[i];
-
-                    const red = barHeight + 100;
-                    const green = 250 - barHeight;
-                    const blue = 50;
-
-                    canvasCtx.fillStyle = `rgb(${red},${green},${blue})`;
+                    const barHeight = dataArray[i];
+                    const hue = (i / bufferLength) * 360;
+                    canvasCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
                     canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
-
                     x += barWidth + 1;
                 }
             }
 
-            // Configurar el canvas para ser responsivo cuando la ventana cambia de tamaño
-            window.addEventListener('resize', () => {
-                canvas.width = canvas.offsetWidth;
-                canvas.height = canvas.offsetHeight;
-            });
+            draw();
+        }
 
-            document.getElementById('audio-upload').addEventListener('change', function(event) {
-                const files = event.target.files;
-                if (files.length > 0) {
-                    const file = files[0];
-                    const fileURL = URL.createObjectURL(file);
-                    audioSource.src = fileURL;
+        function reset() {
+            if (audioElement) {
+                audioElement.pause();
+                audioElement.src = '';
+                audioElement.remove();
+                audioElement = null;
+            }
 
-                    audioElement.style.display = 'block';
-                    canvas.style.display = 'block';
+            if (source) {
+                source.disconnect();
+                source = null;
+            }
+            if (analyser) {
+                analyser.disconnect();
+                analyser = null;
+            }
+            if (audioContext) {
+                audioContext.close().then(() => {
+                    audioContext = null;
+                });
+            }
 
-                    audioElement.load();
-                    audioElement.play();
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+            fileInput.value = '';
+            fileInput.disabled = false;  // Enable file input
+        }
 
-                    const source = audioContext.createMediaElementSource(audioElement);
-                    source.connect(analyser);
-                    analyser.connect(audioContext.destination);
+        fileInput.addEventListener('change', function(event) {
+            if (fileInput.disabled) {
+                return; // No hacer nada si el input está deshabilitado
+            }
 
-                    drawSpectrogram();
+            const file = event.target.files[0];
+            if (file) {
+                const fileURL = URL.createObjectURL(file);
+
+                if (audioElement) {
+                    audioElement.pause();
+                    audioElement.src = '';
+                    audioElement.remove();
                 }
-            });
+
+                audioElement = new Audio(fileURL);
+                audioElement.controls = true;
+                document.body.appendChild(audioElement);
+
+                audioElement.addEventListener('play', function() {
+                    if (!audioContext) {
+                        init();
+                        source = audioContext.createMediaElementSource(audioElement);
+                        source.connect(analyser);
+                        analyser.connect(audioContext.destination);
+                    }
+                });
+
+                fileInput.disabled = true;  // Disable file input while playing
+            }
         });
+
+        resetButton.addEventListener('click', reset);
     </script>
 </body>
 </html>
