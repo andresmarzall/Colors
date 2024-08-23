@@ -1,19 +1,20 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
+  <style>
         body {
             font-family: 'Consolas', monospace;
             margin: 0;
             padding: 0;
-            background-color: #000;
+            background-color: 0;
             background-image: url('./bg.jpeg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            color: #F2E9E4;
+            color: #000;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -61,7 +62,7 @@
             padding: 20px;
             width: 100%;
             max-width: 800px;
-            margin-top: 20px;
+            margin-top: -100px;
             box-sizing: border-box;
         }
 
@@ -166,134 +167,127 @@
     </style>
 </head>
 <body>
-    <div class="navbar">
+     <div class="navbar">
         <h1 id="dynamic-title">Audio frequencies</h1>
     </div>
     <div class="container">
-        <p>Select or drag an audio file to see its frequencies in real time with colored bar graphs.</p>
-        <canvas id="visualizer"></canvas>
-        <div class="controls">
-            <input type="file" id="file-input" accept="audio/*">
-            <button id="reset-button">Reset</button>
-        </div>
+    <p>Select or drag an audio file to see its frequencies in real time with colored bar graphs.</p>
+    <canvas id="visualizer"></canvas>
+    <div class="controls">
+        <input type="file" id="file-input" accept="audio/*">
+        <button id="reset-button">Reset</button>
     </div>
-    <script>
-        const fileInput = document.getElementById('file-input');
-        const resetButton = document.getElementById('reset-button');
-        const canvas = document.getElementById('visualizer');
-        const canvasCtx = canvas.getContext('2d');
-        const title = document.getElementById('dynamic-title');
-        let audioContext, analyser, source;
-        let bufferLength, dataArray;
-        let audioElement;
+</div>
+   <script>
+    const fileInput = document.getElementById('file-input');
+    const resetButton = document.getElementById('reset-button');
+    const canvas = document.getElementById('visualizer');
+    const canvasCtx = canvas.getContext('2d');
+    const title = document.getElementById('dynamic-title');
+    let audioContext, analyser, source;
+    let bufferLength, dataArray;
+    let audioElement;
 
-        function setupCanvas() {
-            // Set canvas size to match device pixel ratio
-            const ratio = window.devicePixelRatio || 1;
-            canvas.width = canvas.clientWidth * ratio;
-            canvas.height = canvas.clientHeight * ratio;
-            canvasCtx.scale(ratio, ratio);
-        }
+    function init() {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
 
-        function init() {
-            setupCanvas();
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
-            bufferLength = analyser.frequencyBinCount;
-            dataArray = new Uint8Array(bufferLength);
+        const barWidth = canvas.width / bufferLength;
 
-            function draw() {
-                requestAnimationFrame(draw);
+        function draw() {
+            requestAnimationFrame(draw);
 
-                analyser.getByteFrequencyData(dataArray);
-                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+            analyser.getByteFrequencyData(dataArray);
+            canvasCtx.fillStyle = '#000';
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-                const barWidth = (canvas.width / bufferLength) * 2.5;
-                let x = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                    const barHeight = dataArray[i];
-                    const hue = (i / bufferLength) * 360;
-                    canvasCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-                    canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
-                    x += barWidth + 1;
-                }
+            let x = 0;
+            for (let i = 0; i < bufferLength; i++) {
+                const barHeight = dataArray[i];
+                const hue = (i / bufferLength) * 360;
+                canvasCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+                canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+                x += barWidth + 1;
             }
-
-            draw();
         }
 
-        function reset() {
+        draw();
+    }
+
+    function reset() {
+        if (audioElement) {
+            audioElement.pause();
+            audioElement.src = '';
+            audioElement.remove();
+            audioElement = null;
+        }
+
+        if (source) {
+            source.disconnect();
+            source = null;
+        }
+        if (analyser) {
+            analyser.disconnect();
+            analyser = null;
+        }
+        if (audioContext) {
+            audioContext.close().then(() => {
+                audioContext = null;
+            });
+        }
+
+        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+        fileInput.value = '';
+        fileInput.disabled = false;  // Enable file input
+    }
+
+    fileInput.addEventListener('change', function(event) {
+        if (fileInput.disabled) {
+            showModal();
+            return;
+        }
+
+        const file = event.target.files[0];
+        if (file) {
+            const fileURL = URL.createObjectURL(file);
+
             if (audioElement) {
                 audioElement.pause();
                 audioElement.src = '';
                 audioElement.remove();
-                audioElement = null;
             }
 
-            if (source) {
-                source.disconnect();
-                source = null;
-            }
-            if (analyser) {
-                analyser.disconnect();
-                analyser = null;
-            }
-            if (audioContext) {
-                audioContext.close().then(() => {
-                    audioContext = null;
-                });
-            }
+            audioElement = new Audio(fileURL);
+            audioElement.controls = true;
+            document.body.appendChild(audioElement);
 
-            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-            fileInput.value = '';
-            fileInput.disabled = false;  // Enable file input
-        }
-
-        fileInput.addEventListener('change', function(event) {
-            if (fileInput.disabled) {
-                showModal();
-                return;
-            }
-
-            const file = event.target.files[0];
-            if (file) {
-                const fileURL = URL.createObjectURL(file);
-
-                if (audioElement) {
-                    audioElement.pause();
-                    audioElement.src = '';
-                    audioElement.remove();
+            audioElement.addEventListener('play', function() {
+                if (!audioContext) {
+                    init();
+                    source = audioContext.createMediaElementSource(audioElement);
+                    source.connect(analyser);
+                    analyser.connect(audioContext.destination);
                 }
+            });
 
-                audioElement = new Audio(fileURL);
-                audioElement.controls = true;
-                document.body.appendChild(audioElement);
+            fileInput.disabled = true;  // Disable file input while playing
+        }
+    });
 
-                audioElement.addEventListener('play', function() {
-                    if (!audioContext) {
-                        init();
-                        source = audioContext.createMediaElementSource(audioElement);
-                        source.connect(analyser);
-                        analyser.connect(audioContext.destination);
-                    }
-                });
+    resetButton.addEventListener('click', reset);
 
-                fileInput.disabled = true;  // Disable file input while playing
-            }
-        });
+    closeModal.addEventListener('click', function() {
+        modal.style.display = 'hidde';
+    });
 
-        resetButton.addEventListener('click', reset);
-
-        closeModal.addEventListener('click', function() {
-            modal.style.display = 'hidde';
-        });
-
-        window.addEventListener('click', function(event) {
-            if (event.target == modal) {
-                modal.style.display = '';
-            }
-        });
-    </script>
+    window.addEventListener('click', function(event) {
+        if (event.target == modal) {
+            modal.style.display = '';
+        }
+    }); 
+</script>
 </body>
 </html>
