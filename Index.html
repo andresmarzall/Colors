@@ -9,8 +9,8 @@
             font-family: 'Consolas', monospace;
             margin: 0;
             padding: 0;
-            background-color: transparent;
-            background-image: url('./bg.jpeg');
+            background-color: gray;
+            background-image: url('./bg.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -32,26 +32,28 @@
             padding: 10px 0;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             z-index: 1000;
+            overflow: hidden;
         }
 
-        #dynamic-title {
-            font-size: 2.5em;
-            font-weight: bold;
-            margin: 0;
-            color: #f5cb5c;
-            opacity: 0;
-            transition: opacity 3s ease-in-out;
-            animation: fadeInOut 3s infinite;
-        }
+   @keyframes slideFromRight {
+    0% {
+        transform: translateX(100%);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(-100%);
+        opacity: 1;
+    }
+}
 
-        @keyframes fadeInOut {
-            0%, 100% {
-                opacity: 0;
-            }
-            50% {
-                opacity: 1;
-            }
-        }
+#dynamic-title {
+    font-size: 2.5em;
+    font-weight: bold;
+    margin: 0;
+    color: #f5cb5c;
+    white-space: nowrap;
+    animation: slideFromRight 10s linear infinite;
+}
 
         .container {
             position: relative;
@@ -100,6 +102,8 @@
             margin-bottom: 20px;
             text-align: center;
             color: white;
+            transition: opacity 3s ease-in-out;
+            animation: fadeInOut 3s infinite;
         }
 
         audio {
