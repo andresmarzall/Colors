@@ -67,7 +67,7 @@
 
         canvas {
             width: 100%;
-            height: 250px;
+            height: 400px;
             border-radius: 10px;
             background-color: #000;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -209,7 +209,7 @@
                 for (let i = 0; i < bufferLength; i++) {
                     const barHeight = dataArray[i];
                     const hue = (i / bufferLength) * 360;
-                    canvasCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+                    canvasCtx.fillStyle = `hsl(${hue}, 100%, 75%)`; // Increase lightness for brighter colors
                     canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
                     x += barWidth + 1;
                 }
