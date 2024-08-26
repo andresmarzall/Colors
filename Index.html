@@ -3,188 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador Futurista</title>
     <style>
         body {
-            font-family: 'Consolas', monospace;
             margin: 0;
             padding: 0;
-            background-color: gray;
-            background-image: url('./bg1.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            color: #000;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            min-height: 100vh;
-        }
-
-        .navbar {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background-color: black;
-            color: #fff;
-            text-align: center;
-            padding: 10px 0;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(45deg, #0f0c29, #302b63, #24243e);
             overflow: hidden;
-        }
-
-        @keyframes slideFromRight {
-            0% {
-                transform: translateX(100%);
-                opacity: 1;
-            }
-            100% {
-                transform: translateX(-100%);
-                opacity: 1;
-            }
-        }
-
-        #dynamic-title {
-            font-size: 2.5em;
-            font-weight: bold;
-            margin: 0;
-            color: #ffb600;
-            white-space: nowrap;
-            animation: slideFromRight 10s linear infinite;
-        }
-
-        .container {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            width: 100%;
-            max-width: 800px;
-            margin-top: -100px;
-            box-sizing: border-box;
+            font-family: Arial, sans-serif;
         }
 
         canvas {
+            display: block;
             width: 100%;
-            height: 300px;
-            border-radius: 10px;
-            background-color: black;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            height: 100%;
         }
 
-        .controls {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            width: 100%;
-            max-width: 500px;
-            margin-top: 20px;
-            gap: 10px;
-        }
-
-        input[type="file"], button {
+        #file-input {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
             padding: 10px;
             border: none;
-            border-radius: 50px;
-            background-color: #333533;
+            border-radius: 20px;
+            background-color: #6a82fb;
             color: white;
             cursor: pointer;
-            width: 100%;
-        }
-
-        p {
-            position: relative;
-            font-size: 1.2em;
-            margin-bottom: 20px;
-            text-align: center;
-            color: white;
-            transition: opacity 3s ease-in-out;
-            animation: fadeInOut 3s infinite;
-        }
-
-        audio {
-            width: 90%;
-            max-width: 600px;
-            margin: 20px 0;
-            outline: none;
-        }
-
-        audio::-webkit-media-controls-panel {
-            background-color: #333533;
-        }
-
-        audio::-webkit-media-controls-play-button,
-        audio::-webkit-media-controls-current-time-display,
-        audio::-webkit-media-controls-time-remaining-display,
-        audio::-webkit-media-controls-timeline,
-        audio::-webkit-media-controls-volume-slider,
-        audio::-webkit-media-controls-mute-button,
-        audio::-webkit-media-controls-seek-back-button,
-        audio::-webkit-media-controls-seek-forward-button {
-            filter: invert(100%);
-        }
-
-        @media (max-width: 768px) {
-            #dynamic-title {
-                font-size: 2em;
-            }
-
-            canvas {
-                height: 150px;
-            }
-
-            p {
-                font-size: 1em;
-            }
-
-            .controls {
-                flex-direction: column;
-            }
-        }
-
-        @media (max-width: 480px) {
-            #dynamic-title {
-                font-size: 1.5em;
-            }
-
-            p {
-                font-size: 0.9em;
-            }
-
-            input[type="file"], button {
-                padding: 8px;
-                font-size: 0.9em;
-            }
-
-            audio {
-                margin-top: 30px;
-            }
+            font-size: 1.1em;
         }
     </style>
 </head>
 <body>
-    <div class="navbar">
-        <h1 id="dynamic-title">Audio Frequency System</h1>
-    </div>
-    <div class="container">
-        <p>Select or drag an audio file to see its frequencies in real time with circular visualizations.</p>
-        <canvas id="visualizer"></canvas>
-        <div class="controls">
-            <input type="file" id="file-input" accept="audio/*">
-            <button id="reset-button">Reset</button>
-        </div>
-    </div>
+    <input type="file" id="file-input" accept="audio/*">
+    <canvas id="visualizer"></canvas>
     <script>
-        const fileInput = document.getElementById('file-input');
-        const resetButton = document.getElementById('reset-button');
         const canvas = document.getElementById('visualizer');
-        const canvasCtx = canvas.getContext('2d');
-        let audioContext, analyser, source;
-        let bufferLength, dataArray;
-        let audioElement;
+        const ctx = canvas.getContext('2d');
+        const fileInput = document.getElementById('file-input');
+        let audioContext, analyser, bufferLength, dataArray, source, audioElement;
 
         function resizeCanvas() {
             canvas.width = window.innerWidth;
@@ -194,7 +55,7 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        function init() {
+        function initVisualizer() {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
             analyser.fftSize = 256;
@@ -204,74 +65,41 @@
             function draw() {
                 requestAnimationFrame(draw);
                 analyser.getByteFrequencyData(dataArray);
-                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 const centerX = canvas.width / 2;
                 const centerY = canvas.height / 2;
-                const maxRadius = Math.min(canvas.width, canvas.height) / 4;
+                const maxRadius = Math.min(centerX, centerY) * 0.7;
+                const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxRadius);
+
+                gradient.addColorStop(0, 'rgba(106, 130, 251, 0.7)');
+                gradient.addColorStop(1, 'rgba(18, 194, 233, 0.2)');
                 
-                for (let i = 0; i < bufferLength; i++) {
-                    const value = dataArray[i];
-                    const angle = (i / bufferLength) * 2 * Math.PI;
-                    const radius = maxRadius + (value / 2);
-                    
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, maxRadius, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                dataArray.forEach((value, i) => {
+                    const angle = (i / bufferLength) * Math.PI * 2;
+                    const radius = maxRadius + value / 2;
                     const x = centerX + Math.cos(angle) * radius;
                     const y = centerY + Math.sin(angle) * radius;
-                    
-                    const r = 255;
-                    const g = Math.floor(255 * (i / bufferLength));
-                    const b = Math.floor(255 * (1 - (i / bufferLength)));
-                    
-                    canvasCtx.beginPath();
-                    canvasCtx.arc(x, y, value / 10, 0, 2 * Math.PI, false);
-                    canvasCtx.fillStyle = `rgb(${r},${g},${b})`;
-                    canvasCtx.fill();
-                }
 
-                // Draw central glowing circle
-                canvasCtx.beginPath();
-                canvasCtx.arc(centerX, centerY, maxRadius, 0, 2 * Math.PI, false);
-                const gradient = canvasCtx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxRadius);
-                gradient.addColorStop(0, 'rgba(255, 204, 0, 0.8)');
-                gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
-                canvasCtx.fillStyle = gradient;
-                canvasCtx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.lineTo(x, y);
+                    ctx.strokeStyle = `rgba(${18 + value}, ${194 - value}, ${233 + value}, 0.9)`;
+                    ctx.stroke();
+                });
             }
 
             draw();
         }
 
-        function reset() {
-            if (audioElement) {
-                audioElement.pause();
-                audioElement.src = '';
-                audioElement.remove();
-                audioElement = null;
-            }
-
-            if (source) {
-                source.disconnect();
-                source = null;
-            }
-            if (analyser) {
-                analyser.disconnect();
-                analyser = null;
-            }
-            if (audioContext) {
-                audioContext.close().then(() => {
-                    audioContext = null;
-                });
-            }
-
-            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-            fileInput.value = '';
-            fileInput.disabled = false;
-        }
-
-        fileInput.addEventListener('change', function(event) {
-            if (fileInput.disabled) {
-                return;
-            }
+        fileInput.addEventListener('change', (event) => {
+            if (fileInput.disabled) return;
 
             const file = event.target.files[0];
             if (file) {
@@ -287,9 +115,9 @@
                 audioElement.controls = true;
                 document.body.appendChild(audioElement);
 
-                audioElement.addEventListener('play', function() {
+                audioElement.addEventListener('play', () => {
                     if (!audioContext) {
-                        init();
+                        initVisualizer();
                         source = audioContext.createMediaElementSource(audioElement);
                         source.connect(analyser);
                         analyser.connect(audioContext.destination);
@@ -299,8 +127,6 @@
                 fileInput.disabled = true;
             }
         });
-
-        resetButton.addEventListener('click', reset);
     </script>
 </body>
 </html>
