@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizador Futurista</title>
+    <title>Esqueleto que Baila</title>
     <style>
         body {
             margin: 0;
@@ -12,15 +12,13 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: linear-gradient(45deg, #0f0c29, #302b63, #24243e);
+            background: linear-gradient(45deg, #1a1a1a, #444);
             overflow: hidden;
-            font-family: Arial, sans-serif;
         }
 
         canvas {
             display: block;
-            width: 100%;
-            height: 100%;
+            background: rgba(0, 0, 0, 0.1);
         }
 
         #file-input {
@@ -31,7 +29,7 @@
             padding: 10px;
             border: none;
             border-radius: 20px;
-            background-color: #6a82fb;
+            background-color: #f09ae9;
             color: white;
             cursor: pointer;
             font-size: 1.1em;
@@ -55,6 +53,42 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
+        function drawSkeleton(freqData) {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const bodyHeight = 200;
+            const limbLength = 80;
+
+            // Función para dibujar un "hueso" del esqueleto
+            function drawBone(x1, y1, x2, y2) {
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 8;
+                ctx.stroke();
+            }
+
+            // Dibujar cabeza (simple círculo)
+            const headRadius = 30 + freqData[0] / 10;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY - bodyHeight, headRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 5;
+            ctx.stroke();
+
+            // Cuerpo
+            drawBone(centerX, centerY - bodyHeight + headRadius, centerX, centerY + bodyHeight / 2);
+
+            // Brazos
+            drawBone(centerX, centerY - bodyHeight / 2, centerX - limbLength, centerY);
+            drawBone(centerX, centerY - bodyHeight / 2, centerX + limbLength, centerY);
+
+            // Piernas
+            drawBone(centerX, centerY + bodyHeight / 2, centerX - limbLength / 2, centerY + bodyHeight);
+            drawBone(centerX, centerY + bodyHeight / 2, centerX + limbLength / 2, centerY + bodyHeight);
+        }
+
         function initVisualizer() {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
@@ -67,32 +101,7 @@
                 analyser.getByteFrequencyData(dataArray);
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                const centerX = canvas.width / 2;
-                const centerY = canvas.height / 2;
-                const maxRadius = Math.min(centerX, centerY) * 0.7;
-                const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxRadius);
-
-                gradient.addColorStop(0, 'rgba(106, 130, 251, 0.7)');
-                gradient.addColorStop(1, 'rgba(18, 194, 233, 0.2)');
-                
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, maxRadius, 0, Math.PI * 2);
-                ctx.fillStyle = gradient;
-                ctx.fill();
-
-                dataArray.forEach((value, i) => {
-                    const angle = (i / bufferLength) * Math.PI * 2;
-                    const radius = maxRadius + value / 2;
-                    const x = centerX + Math.cos(angle) * radius;
-                    const y = centerY + Math.sin(angle) * radius;
-
-                    ctx.beginPath();
-                    ctx.moveTo(centerX, centerY);
-                    ctx.lineTo(x, y);
-                    ctx.strokeStyle = `rgba(${18 + value}, ${194 - value}, ${233 + value}, 0.9)`;
-                    ctx.stroke();
-                });
+                drawSkeleton(dataArray);
             }
 
             draw();
