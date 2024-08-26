@@ -67,13 +67,12 @@
             box-sizing: border-box;
         }
 
-        /* Modificación para un canvas 3D futurista */
         canvas {
             width: 100%;
-            height: 400px; /* Altura incrementada para el efecto 3D */
+            height: 300px;
             border-radius: 10px;
-            background-color: #1a1a1a;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            background-color: black;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
         .controls {
@@ -111,13 +110,15 @@
             outline: none;
         }
 
+
+
         @media (max-width: 768px) {
             #dynamic-title {
                 font-size: 2em;
             }
 
             canvas {
-                height: 200px; /* Ajuste de altura en pantallas más pequeñas */
+                height: 150px;
             }
 
             p {
@@ -182,54 +183,38 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
             analyser.fftSize = 2048;
-            bufferLength = analyser.frequencyBinCount;
+            bufferLength = analyser.fftSize;
             dataArray = new Uint8Array(bufferLength);
 
             function draw() {
                 requestAnimationFrame(draw);
-                analyser.getByteFrequencyData(dataArray);
+                analyser.getByteTimeDomainData(dataArray);
+                canvasCtx.fillStyle = 'black';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                canvasCtx.lineWidth = 3;
+                canvasCtx.strokeStyle = 'rgba(251,133, 0)';
 
-                const barWidth = (canvas.width / bufferLength) * 2.5;
-                let barHeight;
+                canvasCtx.beginPath();
+
+                const sliceWidth = canvas.width * 1.0 / bufferLength;
                 let x = 0;
 
-                // Perspectiva 3D y profundidad de campo
-                const perspective = 0.6;
-                const depth = 100; // Profundidad en el eje Z
-
                 for (let i = 0; i < bufferLength; i++) {
-                    barHeight = dataArray[i] / 2;
+                    const v = dataArray[i] / 128.0;
+                    const y = v * canvas.height / 2;
 
-                    const red = (barHeight + 25) * (i / bufferLength);
-                    const green = 250 * (i / bufferLength);
-                    const blue = 50;
-
-                    canvasCtx.fillStyle = `rgb(${Math.floor(red)}, ${Math.floor(green)}, ${Math.floor(blue)})`;
-
-                    // Dibujar barra 3D
-                    canvasCtx.save();
-                    canvasCtx.translate(x, canvas.height / 2);
-
-                    // Aplicar perspectiva para dar efecto 3D
-                    const scale = 1 - (i / bufferLength) * perspective;
-                    canvasCtx.scale(scale, scale);
-                    canvasCtx.fillRect(0, -barHeight / 2, barWidth, barHeight);
-
-                    // Aplicar sombra en el lado derecho para efecto 3D
-                    canvasCtx.fillStyle = `rgba(0, 0, 0, 0.5)`;
-                    canvasCtx.fillRect(barWidth, -barHeight / 2, barWidth / 4, barHeight);
-
-                    // Profundidad en el eje Z simulada por rectángulos escalonados
-                    for (let j = 0; j < depth; j++) {
-                        canvasCtx.scale(0.99, 0.99);
-                        canvasCtx.fillRect(barWidth + j * 0.5, -barHeight / 2 + j * 0.5, barWidth / 4, barHeight);
+                    if (i === 0) {
+                        canvasCtx.moveTo(x, y);
+                    } else {
+                        canvasCtx.lineTo(x, y);
                     }
 
-                    canvasCtx.restore();
-                    x += barWidth + 1; // Separación entre barras
+                    x += sliceWidth;
                 }
+
+                canvasCtx.lineTo(canvas.width, canvas.height / 2);
+                canvasCtx.stroke();
             }
 
             draw();
