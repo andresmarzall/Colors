@@ -9,6 +9,10 @@
             margin: 0;
             padding: 0;
             background-color: gray;
+            background-image: url('./bg1.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             color: #000;
             display: flex;
             flex-direction: column;
@@ -30,15 +34,49 @@
             overflow: hidden;
         }
 
-        #visualizer {
+        @keyframes slideFromRight {
+            0% {
+                transform: translateX(100%);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(-100%);
+                opacity: 1;
+            }
+        }
+
+        #dynamic-title {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 0;
+            color: white;
+            white-space: nowrap;
+            animation: slideFromRight 10s linear infinite;
+        }
+
+        .container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
             width: 100%;
-            height: 100vh;
-            display: block;
+            max-width: 800px;
+            margin-top: -100px;
+            box-sizing: border-box;
+        }
+
+        /* Modificación para un canvas 3D futurista */
+        canvas {
+            width: 100%;
+            height: 400px; /* Altura incrementada para el efecto 3D */
+            border-radius: 10px;
+            background-color: #1a1a1a;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
         }
 
         .controls {
-            position: absolute;
-            bottom: 20px;
             display: flex;
             justify-content: space-around;
             align-items: center;
@@ -46,7 +84,6 @@
             max-width: 500px;
             margin-top: 20px;
             gap: 10px;
-            z-index: 1001;
         }
 
         input[type="file"], button {
@@ -58,56 +95,87 @@
             cursor: pointer;
             width: 100%;
         }
+
+        p {
+            position: relative;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        audio {
+            width: 90%;
+            max-width: 600px;
+            margin: 20px 0;
+            outline: none;
+        }
+
+        @media (max-width: 768px) {
+            #dynamic-title {
+                font-size: 2em;
+            }
+
+            canvas {
+                height: 200px; /* Ajuste de altura en pantallas más pequeñas */
+            }
+
+            p {
+                font-size: 1em;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #dynamic-title {
+                font-size: 1.5em;
+            }
+
+            p {
+                font-size: 0.9em;
+            }
+
+            input[type="file"], button {
+                padding: 8px;
+                font-size: 0.9em;
+            }
+
+            audio {
+                margin-top: 30px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="navbar">
         <h1 id="dynamic-title">Audio Frequency System</h1>
     </div>
-    <canvas id="visualizer"></canvas>
-    <div class="controls">
-        <input type="file" id="file-input" accept="audio/*">
-        <button id="reset-button">Reset</button>
+    <div class="container">
+        <p>Select or drag an audio file to see its frequencies in real time with wave visualizations.</p>
+        <canvas id="visualizer"></canvas>
+        <div class="controls">
+            <input type="file" id="file-input" accept="audio/*">
+            <button id="reset-button">Reset</button>
+        </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         const fileInput = document.getElementById('file-input');
         const resetButton = document.getElementById('reset-button');
         const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
         let audioContext, analyser, source;
         let bufferLength, dataArray;
         let audioElement;
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas });
-
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        camera.position.z = 500;
-
-        const bars = [];
-        const barWidth = 10;
-        const barGap = 2;
-
-        function createBars() {
-            const numBars = Math.floor((window.innerWidth / (barWidth + barGap)) / 2);
-
-            for (let i = 0; i < numBars; i++) {
-                const geometry = new THREE.BoxGeometry(barWidth, 1, 10);
-                const material = new THREE.MeshBasicMaterial({ color: 0xfb8500 });
-                const bar = new THREE.Mesh(geometry, material);
-                bar.position.x = (i - numBars / 2) * (barWidth + barGap);
-                scene.add(bar);
-                bars.push(bar);
-            }
-        }
-
         function resizeCanvas() {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         }
 
+        resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
         function init() {
@@ -117,23 +185,54 @@
             bufferLength = analyser.frequencyBinCount;
             dataArray = new Uint8Array(bufferLength);
 
-            createBars();
-
-            function animate() {
-                requestAnimationFrame(animate);
-
+            function draw() {
+                requestAnimationFrame(draw);
                 analyser.getByteFrequencyData(dataArray);
 
-                for (let i = 0; i < bars.length; i++) {
-                    const scale = dataArray[i] / 128.0;
-                    bars[i].scale.y = Math.max(1, scale);
-                    bars[i].position.y = bars[i].scale.y / 2;
-                }
+                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
-                renderer.render(scene, camera);
+                const barWidth = (canvas.width / bufferLength) * 2.5;
+                let barHeight;
+                let x = 0;
+
+                // Perspectiva 3D y profundidad de campo
+                const perspective = 0.6;
+                const depth = 100; // Profundidad en el eje Z
+
+                for (let i = 0; i < bufferLength; i++) {
+                    barHeight = dataArray[i] / 2;
+
+                    const red = (barHeight + 25) * (i / bufferLength);
+                    const green = 250 * (i / bufferLength);
+                    const blue = 50;
+
+                    canvasCtx.fillStyle = `rgb(${Math.floor(red)}, ${Math.floor(green)}, ${Math.floor(blue)})`;
+
+                    // Dibujar barra 3D
+                    canvasCtx.save();
+                    canvasCtx.translate(x, canvas.height / 2);
+
+                    // Aplicar perspectiva para dar efecto 3D
+                    const scale = 1 - (i / bufferLength) * perspective;
+                    canvasCtx.scale(scale, scale);
+                    canvasCtx.fillRect(0, -barHeight / 2, barWidth, barHeight);
+
+                    // Aplicar sombra en el lado derecho para efecto 3D
+                    canvasCtx.fillStyle = `rgba(0, 0, 0, 0.5)`;
+                    canvasCtx.fillRect(barWidth, -barHeight / 2, barWidth / 4, barHeight);
+
+                    // Profundidad en el eje Z simulada por rectángulos escalonados
+                    for (let j = 0; j < depth; j++) {
+                        canvasCtx.scale(0.99, 0.99);
+                        canvasCtx.fillRect(barWidth + j * 0.5, -barHeight / 2 + j * 0.5, barWidth / 4, barHeight);
+                    }
+
+                    canvasCtx.restore();
+                    x += barWidth + 1; // Separación entre barras
+                }
             }
 
-            animate();
+            draw();
         }
 
         function reset() {
@@ -158,11 +257,7 @@
                 });
             }
 
-            bars.forEach(bar => {
-                bar.scale.y = 1;
-                bar.position.y = 0.5;
-            });
-
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
             fileInput.value = '';
             fileInput.disabled = false;
         }
