@@ -170,7 +170,7 @@
         <h1 id="dynamic-title">Audio Frequency System</h1>
     </div>
     <div class="container">
-        <p>Select or drag an audio file to see its frequencies in real time with wave visualizations.</p>
+        <p>Select or drag an audio file to see its frequencies in real time with circular visualizations.</p>
         <canvas id="visualizer"></canvas>
         <div class="controls">
             <input type="file" id="file-input" accept="audio/*">
@@ -197,38 +197,43 @@
         function init() {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
-            analyser.fftSize = 2048;
-            bufferLength = analyser.fftSize;
+            analyser.fftSize = 256;
+            bufferLength = analyser.frequencyBinCount;
             dataArray = new Uint8Array(bufferLength);
 
             function draw() {
                 requestAnimationFrame(draw);
-                analyser.getByteTimeDomainData(dataArray);
-                canvasCtx.fillStyle = 'black';
-                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+                analyser.getByteFrequencyData(dataArray);
+                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
-                canvasCtx.lineWidth = 2;
-                canvasCtx.strokeStyle = 'rgba(0, 255, 0, 1)';
-
-                canvasCtx.beginPath();
-
-                const sliceWidth = canvas.width * 1.0 / bufferLength;
-                let x = 0;
-
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const radius = Math.min(canvas.width, canvas.height) / 4;
+                const barWidth = (2 * Math.PI) / bufferLength;
+                
                 for (let i = 0; i < bufferLength; i++) {
-                    const v = dataArray[i] / 128.0;
-                    const y = v * canvas.height / 2;
+                    const value = dataArray[i];
+                    const angle = barWidth * i;
+                    const barHeight = value / 2;
+                    const x = centerX + Math.cos(angle) * (radius + barHeight);
+                    const y = centerY + Math.sin(angle) * (radius + barHeight);
+                    
+                    const r = Math.floor(255 * (i / bufferLength));
+                    const g = Math.floor(255 * (1 - (i / bufferLength)));
+                    const b = 255;
 
-                    if (i === 0) {
-                        canvasCtx.moveTo(x, y);
-                    } else {
-                        canvasCtx.lineTo(x, y);
-                    }
-
-                    x += sliceWidth;
+                    canvasCtx.beginPath();
+                    canvasCtx.moveTo(centerX, centerY);
+                    canvasCtx.lineTo(x, y);
+                    canvasCtx.strokeStyle = `rgb(${r},${g},${b})`;
+                    canvasCtx.lineWidth = 5;
+                    canvasCtx.stroke();
                 }
 
-                canvasCtx.lineTo(canvas.width, canvas.height / 2);
+                canvasCtx.beginPath();
+                canvasCtx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+                canvasCtx.lineWidth = 10;
+                canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
                 canvasCtx.stroke();
             }
 
