@@ -202,7 +202,7 @@
 
                 for (let i = 0; i < bufferLength; i++) {
                     const v = dataArray[i] / 128.0;
-                    const y = v * canvas.height / 1;
+                    const y = v * canvas.height / 2;
 
                     if (i === 0) {
                         canvasCtx.moveTo(x, y);
@@ -213,7 +213,7 @@
                     x += sliceWidth;
                 }
 
-                canvasCtx.lineTo(canvas.width, canvas.height / 1);
+                canvasCtx.lineTo(canvas.width, canvas.height / 2);
                 canvasCtx.stroke();
             }
 
