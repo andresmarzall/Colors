@@ -49,7 +49,7 @@
             font-size: 2.5em;
             font-weight: bold;
             margin: 0;
-            color: #ffb600;
+            color: white;
             white-space: nowrap;
             animation: slideFromRight 10s linear infinite;
         }
@@ -89,8 +89,8 @@
             padding: 10px;
             border: none;
             border-radius: 50px;
-            background-color: #333533;
-            color: white;
+            background-color: white;
+            color: black;
             cursor: pointer;
             width: 100%;
         }
@@ -101,8 +101,6 @@
             margin-bottom: 20px;
             text-align: center;
             color: white;
-            transition: opacity 3s ease-in-out;
-            animation: fadeInOut 3s infinite;
         }
 
         audio {
@@ -207,7 +205,7 @@
                 canvasCtx.fillStyle = 'black';
                 canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-                canvasCtx.lineWidth = 2;
+                canvasCtx.lineWidth = 5;
                 canvasCtx.strokeStyle = 'rgba(251,133, 0)';
 
                 canvasCtx.beginPath();
@@ -228,7 +226,7 @@
                     x += sliceWidth;
                 }
 
-                canvasCtx.lineTo(canvas.width, canvas.height / 2);
+                canvasCtx.lineTo(canvas.width, canvas.height / 5);
                 canvasCtx.stroke();
             }
 
