@@ -192,7 +192,7 @@
                 canvasCtx.fillStyle = 'black';
                 canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-                canvasCtx.lineWidth = 3;
+                canvasCtx.lineWidth = 10;
                 canvasCtx.strokeStyle = 'rgba(251,133, 0)';
 
                 canvasCtx.beginPath();
@@ -202,7 +202,7 @@
 
                 for (let i = 0; i < bufferLength; i++) {
                     const v = dataArray[i] / 128.0;
-                    const y = v * canvas.height / 3;
+                    const y = v * canvas.height / 2;
 
                     if (i === 0) {
                         canvasCtx.moveTo(x, y);
@@ -213,7 +213,7 @@
                     x += sliceWidth;
                 }
 
-                canvasCtx.lineTo(canvas.width, canvas.height / 3);
+                canvasCtx.lineTo(canvas.width, canvas.height / 2);
                 canvasCtx.stroke();
             }
 
