@@ -208,33 +208,34 @@
 
                 const centerX = canvas.width / 2;
                 const centerY = canvas.height / 2;
-                const radius = Math.min(canvas.width, canvas.height) / 4;
-                const barWidth = (2 * Math.PI) / bufferLength;
+                const maxRadius = Math.min(canvas.width, canvas.height) / 4;
                 
                 for (let i = 0; i < bufferLength; i++) {
                     const value = dataArray[i];
-                    const angle = barWidth * i;
-                    const barHeight = value / 2;
-                    const x = centerX + Math.cos(angle) * (radius + barHeight);
-                    const y = centerY + Math.sin(angle) * (radius + barHeight);
+                    const angle = (i / bufferLength) * 2 * Math.PI;
+                    const radius = maxRadius + (value / 2);
                     
-                    const r = Math.floor(255 * (i / bufferLength));
-                    const g = Math.floor(255 * (1 - (i / bufferLength)));
-                    const b = 255;
-
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY + Math.sin(angle) * radius;
+                    
+                    const r = 255;
+                    const g = Math.floor(255 * (i / bufferLength));
+                    const b = Math.floor(255 * (1 - (i / bufferLength)));
+                    
                     canvasCtx.beginPath();
-                    canvasCtx.moveTo(centerX, centerY);
-                    canvasCtx.lineTo(x, y);
-                    canvasCtx.strokeStyle = `rgb(${r},${g},${b})`;
-                    canvasCtx.lineWidth = 5;
-                    canvasCtx.stroke();
+                    canvasCtx.arc(x, y, value / 10, 0, 2 * Math.PI, false);
+                    canvasCtx.fillStyle = `rgb(${r},${g},${b})`;
+                    canvasCtx.fill();
                 }
 
+                // Draw central glowing circle
                 canvasCtx.beginPath();
-                canvasCtx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
-                canvasCtx.lineWidth = 10;
-                canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-                canvasCtx.stroke();
+                canvasCtx.arc(centerX, centerY, maxRadius, 0, 2 * Math.PI, false);
+                const gradient = canvasCtx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxRadius);
+                gradient.addColorStop(0, 'rgba(255, 204, 0, 0.8)');
+                gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                canvasCtx.fillStyle = gradient;
+                canvasCtx.fill();
             }
 
             draw();
