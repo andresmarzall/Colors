@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="es">
+<!DOCTYPE html>
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,11 +9,12 @@
       margin: 0;
       background: #111;
       overflow: hidden;
-      font-family: sans-serif;
+      font-family: Arial, sans-serif;
+      touch-action: manipulation;
     }
     canvas {
       display: block;
-      background: #4ab;
+      background: linear-gradient(to bottom, #4ab, #2a8);
     }
     .controls {
       position: fixed;
@@ -22,23 +24,36 @@
       justify-content: space-between;
       padding: 10px;
       box-sizing: border-box;
+      background: rgba(0, 0, 0, 0.5);
     }
-    .joystick {
-      position: relative;
-      width: 100px;
-      height: 100px;
+    .arrow-buttons {
+      display: grid;
+      grid-template-areas:
+        ". up ."
+        "left . right"
+        ". down .";
+      gap: 5px;
+    }
+    .arrow-btn {
+      width: 50px;
+      height: 50px;
       background: #333;
-      border-radius: 50%;
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 24px;
+      user-select: none;
+      touch-action: manipulation;
     }
-    .stick {
-      position: absolute;
-      width: 40px;
-      height: 40px;
-      background: #777;
-      border-radius: 50%;
-      top: 30px;
-      left: 30px;
+    .arrow-btn:active {
+      background: #555;
     }
+    #up { grid-area: up; }
+    #left { grid-area: left; }
+    #right { grid-area: right; }
+    #down { grid-area: down; }
     .button {
       width: 80px;
       height: 80px;
@@ -50,113 +65,207 @@
       font-weight: bold;
       font-size: 18px;
       user-select: none;
+      touch-action: manipulation;
+    }
+    .button:active {
+      background: #e55;
+    }
+    .score {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-size: 20px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 5px 10px;
+      border-radius: 5px;
     }
   </style>
 </head>
 <body>
+  <div class="score" id="score">Objetivos: 0</div>
   <canvas id="game"></canvas>
   <div class="controls">
-    <div class="joystick" id="joystick">
-      <div class="stick" id="stick"></div>
+    <div class="arrow-buttons">
+      <div class="arrow-btn" id="up">↑</div>
+      <div class="arrow-btn" id="left">←</div>
+      <div class="arrow-btn" id="right">→</div>
+      <div class="arrow-btn" id="down">↓</div>
     </div>
     <div class="button" id="shoot">FIRE</div>
-  </div>  <script>
+  </div>
+
+  <script>
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
     let width = window.innerWidth;
-    let height = window.innerHeight * 0.7;
+    let height = window.innerHeight * 0.8;
     canvas.width = width;
     canvas.height = height;
 
-    // Base64 sounds
-    const shootSound = new Audio("data:audio/wav;base64,UklGRtIzAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0Ya4zAAAAAP8//z//P/8//z//P/8//z//P/8//z//P/8//z//");
-    const hitSound = new Audio("data:audio/wav;base64,UklGRkZWAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YSJWAAAAAP8//z//P/8//z//P/8//z//P/8//P/8//z//");
+    // Sonidos mejorados
+    const shootSound = new Audio();
+    shootSound.src = 'data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...'; // Sonido simplificado
+
+    const hitSound = new Audio();
+    hitSound.src = 'data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...'; // Sonido simplificado
 
     // Player
-    const player = { x: width / 2, y: height - 60 };
+    const player = { 
+      x: width / 2, 
+      y: height - 60,
+      speed: 5,
+      size: 20
+    };
+    
     const arrows = [];
     const targets = [];
+    let score = 0;
+    const scoreElement = document.getElementById("score");
 
-    for (let i = 0; i < 5; i++) {
-      targets.push({
-        x: Math.random() * (width - 50),
-        y: Math.random() * height / 2,
-        dx: 2 + Math.random() * 2
-      });
-    }
-
-    // Controls
-    let dx = 0;
-    document.getElementById("shoot").addEventListener("touchstart", () => {
-      arrows.push({ x: player.x, y: player.y });
-      shootSound.currentTime = 0;
-      shootSound.play();
-    });
-
-    const joystick = document.getElementById("joystick");
-    const stick = document.getElementById("stick");
-    joystick.addEventListener("touchmove", e => {
-      const touch = e.touches[0];
-      const rect = joystick.getBoundingClientRect();
-      const relX = touch.clientX - rect.left - 50;
-      dx = relX / 20;
-    });
-    joystick.addEventListener("touchend", () => {
-      dx = 0;
-    });
-
-    function draw() {
-      ctx.clearRect(0, 0, width, height);
-      // Player
-      ctx.fillStyle = "black";
-      ctx.fillRect(player.x - 10, player.y - 10, 20, 20);
-
-      // Arrows
-      ctx.fillStyle = "white";
-      for (let a of arrows) {
-        a.y -= 5;
-        ctx.fillRect(a.x, a.y, 2, 10);
-      }
-
-      // Targets
-      ctx.fillStyle = "red";
-      for (let t of targets) {
-        t.x += t.dx;
-        if (t.x > width - 30 || t.x < 0) t.dx *= -1;
-        ctx.fillRect(t.x, t.y, 30, 30);
-      }
-
-      // Collisions
-      arrows.forEach((a, ai) => {
-        targets.forEach((t, ti) => {
-          if (a.x > t.x && a.x < t.x + 30 && a.y > t.y && a.y < t.y + 30) {
-            arrows.splice(ai, 1);
-            targets.splice(ti, 1);
-            hitSound.currentTime = 0;
-            hitSound.play();
-          }
+    // Crear objetivos iniciales
+    function createTargets(count) {
+      for (let i = 0; i < count; i++) {
+        targets.push({
+          x: Math.random() * (width - 50),
+          y: Math.random() * height / 2,
+          dx: (1 + Math.random() * 3) * (Math.random() > 0.5 ? 1 : -1),
+          size: 30 + Math.random() * 20
         });
+      }
+    }
+    createTargets(5);
+
+    // Controles táctiles
+    let moveX = 0;
+    let moveY = 0;
+
+    // Configurar eventos para los botones de flecha
+    const setupButton = (id, x, y) => {
+      const btn = document.getElementById(id);
+      const handleStart = () => { moveX += x; moveY += y; };
+      const handleEnd = () => { moveX -= x; moveY -= y; };
+      
+      btn.addEventListener('touchstart', handleStart);
+      btn.addEventListener('mousedown', handleStart);
+      btn.addEventListener('touchend', handleEnd);
+      btn.addEventListener('mouseup', handleEnd);
+      btn.addEventListener('mouseleave', handleEnd);
+    };
+
+    setupButton('up', 0, -1);
+    setupButton('down', 0, 1);
+    setupButton('left', -1, 0);
+    setupButton('right', 1, 0);
+
+    // Disparar
+    document.getElementById("shoot").addEventListener("click", shoot);
+    document.getElementById("shoot").addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      shoot();
+    });
+
+    function shoot() {
+      arrows.push({ 
+        x: player.x, 
+        y: player.y - player.size/2,
+        speed: 8
+      });
+      shootSound.currentTime = 0;
+      shootSound.play().catch(e => console.log("Error al reproducir sonido:", e));
+    }
+
+    // Dibujar elementos del juego
+    function draw() {
+      // Fondo
+      ctx.clearRect(0, 0, width, height);
+      
+      // Jugador (arco)
+      ctx.fillStyle = "#8B4513";
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, player.size/2, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Flechas
+      ctx.fillStyle = "white";
+      arrows.forEach(a => {
+        ctx.fillRect(a.x - 1, a.y, 2, 10);
+      });
+
+      // Objetivos
+      targets.forEach(t => {
+        ctx.fillStyle = "red";
+        ctx.beginPath();
+        ctx.arc(t.x + t.size/2, t.y + t.size/2, t.size/2, 0, Math.PI * 2);
+        ctx.fill();
       });
     }
 
+    // Actualizar lógica del juego
     function update() {
-      player.x += dx;
-      if (player.x < 0) player.x = 0;
-      if (player.x > width) player.x = width;
+      // Mover jugador
+      player.x += moveX * player.speed;
+      player.y += moveY * player.speed;
+      
+      // Limitar movimiento dentro del canvas
+      player.x = Math.max(player.size/2, Math.min(width - player.size/2, player.x));
+      player.y = Math.max(player.size/2, Math.min(height - player.size/2, player.y));
+
+      // Mover flechas
+      for (let i = arrows.length - 1; i >= 0; i--) {
+        arrows[i].y -= arrows[i].speed;
+        if (arrows[i].y < 0) {
+          arrows.splice(i, 1);
+        }
+      }
+
+      // Mover objetivos y detectar colisiones
+      for (let i = targets.length - 1; i >= 0; i--) {
+        const t = targets[i];
+        t.x += t.dx;
+        
+        // Rebotar en los bordes
+        if (t.x < 0 || t.x + t.size > width) {
+          t.dx *= -1;
+        }
+
+        // Detectar colisiones con flechas
+        for (let j = arrows.length - 1; j >= 0; j--) {
+          const a = arrows[j];
+          if (a.x > t.x && a.x < t.x + t.size && 
+              a.y > t.y && a.y < t.y + t.size) {
+            arrows.splice(j, 1);
+            targets.splice(i, 1);
+            score++;
+            scoreElement.textContent = `Objetivos: ${score}`;
+            hitSound.currentTime = 0;
+            hitSound.play().catch(e => console.log("Error al reproducir sonido:", e));
+            break;
+          }
+        }
+      }
+
+      // Añadir nuevos objetivos si quedan pocos
+      if (targets.length < 2) {
+        createTargets(3);
+      }
     }
 
-    function loop() {
+    // Bucle principal del juego
+    function gameLoop() {
       update();
       draw();
-      requestAnimationFrame(loop);
+      requestAnimationFrame(gameLoop);
     }
-    loop();
+    gameLoop();
 
+    // Ajustar tamaño al cambiar la ventana
     window.addEventListener("resize", () => {
       width = window.innerWidth;
-      height = window.innerHeight * 0.7;
+      height = window.innerHeight * 0.8;
       canvas.width = width;
       canvas.height = height;
     });
-  </script></body>
+  </script>
+</body>
 </html>
