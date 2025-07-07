@@ -1,178 +1,162 @@
-<!DOCTYPE html>
-<html lang="es">
+<!DOCTYPE html><html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Arco y Flecha</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arco y Flecha Retro</title>
   <style>
     body {
       margin: 0;
-      padding: 0;
+      background: #111;
+      overflow: hidden;
       font-family: sans-serif;
-      background: linear-gradient(to bottom, #87ceeb, #ffffff);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
-
-    h1 {
-      margin-top: 20px;
-    }
-
     canvas {
-      background-color: #e0e0e0;
-      border: 2px solid #333;
-      border-radius: 10px;
-      margin-top: 20px;
+      display: block;
+      background: #4ab;
     }
-
-    .scoreboard {
-      margin-top: 10px;
-      font-size: 1.2em;
+    .controls {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      box-sizing: border-box;
     }
-
-    button {
-      margin-top: 15px;
-      padding: 10px 20px;
-      border: none;
-      background-color: #333;
-      color: white;
-      border-radius: 5px;
-      font-size: 1em;
-      cursor: pointer;
+    .joystick {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      background: #333;
+      border-radius: 50%;
     }
-
-    @media (max-width: 600px) {
-      canvas {
-        width: 100% !important;
-        height: auto !important;
-      }
+    .stick {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: #777;
+      border-radius: 50%;
+      top: 30px;
+      left: 30px;
+    }
+    .button {
+      width: 80px;
+      height: 80px;
+      background: #c33;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 80px;
+      color: #fff;
+      font-weight: bold;
+      font-size: 18px;
+      user-select: none;
     }
   </style>
 </head>
 <body>
-  <h1>🏹 Juego de Arco y Flecha</h1>
-  <canvas id="gameCanvas" width="600" height="400"></canvas>
-  <div class="scoreboard">
-    🎯 Puntaje: <span id="score">0</span> | 🏆 Récord: <span id="highscore">0</span> | 🏹 Flechas: <span id="arrows">10</span>
-  </div>
-  <button onclick="restartGame()">Reiniciar</button>
-
-  <script>
-    const canvas = document.getElementById("gameCanvas");
+  <canvas id="game"></canvas>
+  <div class="controls">
+    <div class="joystick" id="joystick">
+      <div class="stick" id="stick"></div>
+    </div>
+    <div class="button" id="shoot">FIRE</div>
+  </div>  <script>
+    const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
+    let width = window.innerWidth;
+    let height = window.innerHeight * 0.7;
+    canvas.width = width;
+    canvas.height = height;
 
-    let target = { x: 0, y: 100, width: 40, height: 40, speed: 2 };
-    let arrows = [];
-    let score = 0;
-    let highscore = localStorage.getItem("highscore") || 0;
-    let arrowsLeft = 10;
-    let gameOver = false;
+    // Base64 sounds
+    const shootSound = new Audio("data:audio/wav;base64,UklGRtIzAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0Ya4zAAAAAP8//z//P/8//z//P/8//z//P/8//z//P/8//z//");
+    const hitSound = new Audio("data:audio/wav;base64,UklGRkZWAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YSJWAAAAAP8//z//P/8//z//P/8//z//P/8//P/8//z//");
 
-    document.getElementById("highscore").textContent = highscore;
+    // Player
+    const player = { x: width / 2, y: height - 60 };
+    const arrows = [];
+    const targets = [];
 
-    function drawTarget() {
-      ctx.fillStyle = "red";
-      ctx.beginPath();
-      ctx.arc(target.x + target.width / 2, target.y + target.height / 2, target.width / 2, 0, Math.PI * 2);
-      ctx.fill();
+    for (let i = 0; i < 5; i++) {
+      targets.push({
+        x: Math.random() * (width - 50),
+        y: Math.random() * height / 2,
+        dx: 2 + Math.random() * 2
+      });
     }
 
-    function drawArrows() {
+    // Controls
+    let dx = 0;
+    document.getElementById("shoot").addEventListener("touchstart", () => {
+      arrows.push({ x: player.x, y: player.y });
+      shootSound.currentTime = 0;
+      shootSound.play();
+    });
+
+    const joystick = document.getElementById("joystick");
+    const stick = document.getElementById("stick");
+    joystick.addEventListener("touchmove", e => {
+      const touch = e.touches[0];
+      const rect = joystick.getBoundingClientRect();
+      const relX = touch.clientX - rect.left - 50;
+      dx = relX / 20;
+    });
+    joystick.addEventListener("touchend", () => {
+      dx = 0;
+    });
+
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+      // Player
       ctx.fillStyle = "black";
-      arrows.forEach(arrow => {
-        ctx.fillRect(arrow.x, arrow.y, 5, 20);
-      });
-    }
+      ctx.fillRect(player.x - 10, player.y - 10, 20, 20);
 
-    function updateArrows() {
-      arrows.forEach(arrow => {
-        arrow.y -= 5;
-      });
-
-      arrows = arrows.filter(arrow => arrow.y > 0);
-
-      arrows.forEach(arrow => {
-        if (
-          arrow.x > target.x &&
-          arrow.x < target.x + target.width &&
-          arrow.y > target.y &&
-          arrow.y < target.y + target.height
-        ) {
-          score++;
-          arrowsLeft++;
-          arrowsLeft = Math.min(arrowsLeft, 10);
-          arrows = arrows.filter(a => a !== arrow);
-          target.speed += 0.3;
-        }
-      });
-    }
-
-    function drawBow() {
-      ctx.fillStyle = "brown";
-      ctx.fillRect(canvas.width / 2 - 5, canvas.height - 30, 10, 30);
-    }
-
-    function shootArrow(x) {
-      if (gameOver) return;
-      if (arrowsLeft > 0) {
-        arrows.push({ x: x, y: canvas.height - 40 });
-        arrowsLeft--;
+      // Arrows
+      ctx.fillStyle = "white";
+      for (let a of arrows) {
+        a.y -= 5;
+        ctx.fillRect(a.x, a.y, 2, 10);
       }
-    }
 
-    function updateTarget() {
-      target.x += target.speed;
-      if (target.x + target.width > canvas.width || target.x < 0) {
-        target.speed *= -1;
+      // Targets
+      ctx.fillStyle = "red";
+      for (let t of targets) {
+        t.x += t.dx;
+        if (t.x > width - 30 || t.x < 0) t.dx *= -1;
+        ctx.fillRect(t.x, t.y, 30, 30);
       }
+
+      // Collisions
+      arrows.forEach((a, ai) => {
+        targets.forEach((t, ti) => {
+          if (a.x > t.x && a.x < t.x + 30 && a.y > t.y && a.y < t.y + 30) {
+            arrows.splice(ai, 1);
+            targets.splice(ti, 1);
+            hitSound.currentTime = 0;
+            hitSound.play();
+          }
+        });
+      });
     }
 
     function update() {
-      if (gameOver) return;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      updateTarget();
-      updateArrows();
-
-      drawTarget();
-      drawArrows();
-      drawBow();
-
-      document.getElementById("score").textContent = score;
-      document.getElementById("arrows").textContent = arrowsLeft;
-
-      if (arrowsLeft <= 0 && arrows.length === 0) {
-        gameOver = true;
-        if (score > highscore) {
-          highscore = score;
-          localStorage.setItem("highscore", highscore);
-        }
-        setTimeout(() => {
-          alert("🎮 Juego terminado. Puntaje: " + score);
-        }, 300);
-      }
-
-      requestAnimationFrame(update);
+      player.x += dx;
+      if (player.x < 0) player.x = 0;
+      if (player.x > width) player.x = width;
     }
 
-    canvas.addEventListener("click", e => {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      shootArrow(x);
-    });
-
-    function restartGame() {
-      score = 0;
-      arrowsLeft = 10;
-      arrows = [];
-      target = { x: 0, y: 100, width: 40, height: 40, speed: 2 };
-      gameOver = false;
+    function loop() {
       update();
+      draw();
+      requestAnimationFrame(loop);
     }
+    loop();
 
-    update();
-  </script>
-</body>
+    window.addEventListener("resize", () => {
+      width = window.innerWidth;
+      height = window.innerHeight * 0.7;
+      canvas.width = width;
+      canvas.height = height;
+    });
+  </script></body>
 </html>
