@@ -3,18 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#1a1a1a">
-  <meta name="description" content="Sintetizador profesional de 5 teclas">
-  <title>Sintetizador Yamaha Style</title>
-  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlNpbnRldGl6YWRvciBQcm9mZXNpb25hbCIsCiAgInNob3J0X25hbWUiOiAiU2ludGV0aXphZG9yIiwKICAiZGVzY3JpcHRpb24iOiAiU2ludGV0aXphZG9yIG11c2ljYWwgZGUgNSB0ZWNsYXMiLAogICJzdGFydF91cmwiOiAiLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzFhMWEyMiIsCiAgInRoZW1lX2NvbG9yIjogIiMxYTFhMjIiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICIvIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciLAogICAgICAicHVycG9zZSI6ICJhbnkiCiAgICB9CiAgXQp9">
+  <title>Sintetizador Airy Keys</title>
   <style>
     :root {
-      --black-key: #1a1a1a;
-      --white-key: #f8f8f8;
+      --bg-color: #f5f5f5;
+      --key-color: #ffffff;
       --key-active: #4a8eff;
+      --key-border: #e0e0e0;
+      --text-color: #333333;
       --panel-bg: #2a2a2a;
-      --text-color: #ffffff;
-      --yamaha-red: #e41e26;
+      --display-bg: #1a1a1a;
+      --highlight: #e41e26;
     }
     
     * {
@@ -27,104 +26,113 @@
     
     body {
       margin: 0;
-      background: var(--black-key);
+      background: var(--bg-color);
       color: var(--text-color);
-      font-family: 'Arial', sans-serif;
-      overflow: hidden;
-      touch-action: manipulation;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
     
-    .brand-header {
-      background: var(--black-key);
-      padding: 10px;
+    .header {
+      padding: 15px;
       text-align: center;
-      border-bottom: 2px solid var(--yamaha-red);
+      border-bottom: 1px solid var(--key-border);
     }
     
-    .brand-header h1 {
-      color: var(--text-color);
+    .title {
       font-size: 1.5rem;
       margin: 0;
-      letter-spacing: 1px;
+      color: var(--text-color);
     }
     
-    .brand-header .logo {
-      color: var(--yamaha-red);
-      font-weight: bold;
-      font-size: 1.8rem;
+    .subtitle {
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 5px;
     }
     
     .synth-container {
-      flex-grow: 1;
+      flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 10px;
+      padding: 15px;
+      gap: 10px;
+    }
+    
+    .display {
+      background: var(--display-bg);
+      color: white;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'Courier New', monospace;
+      text-align: center;
+      font-size: 1rem;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
     }
     
     .keyboard {
       display: flex;
-      height: 60vh;
-      position: relative;
+      flex-direction: column;
+      gap: 8px;
       margin-top: auto;
+    }
+    
+    .key-row {
+      display: flex;
+      gap: 8px;
     }
     
     .key {
       flex: 1;
+      background: var(--key-color);
+      border: 1px solid var(--key-border);
+      border-radius: 8px;
+      padding: 15px 5px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.05s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       display: flex;
       flex-direction: column;
-      justify-content: flex-end;
-      align-items: center;
-      padding-bottom: 20px;
-      position: relative;
-      cursor: pointer;
-    }
-    
-    .white-key {
-      background: var(--white-key);
-      border: 1px solid #ccc;
-      border-radius: 0 0 5px 5px;
-      box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-      z-index: 1;
-    }
-    
-    .black-key {
-      background: var(--black-key);
-      width: 60%;
-      height: 60%;
-      margin-left: -15%;
-      margin-right: -15%;
-      z-index: 2;
-      border-radius: 0 0 3px 3px;
-      box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+      justify-content: center;
+      min-height: 60px;
     }
     
     .key.active {
       background: var(--key-active);
+      transform: scale(0.98);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
     
     .key-label {
-      font-size: 1.2rem;
       font-weight: bold;
-      margin-bottom: 5px;
-      color: #333;
+      font-size: 1.1rem;
     }
     
-    .black-key .key-label {
-      color: #fff;
+    .key-note {
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 3px;
     }
     
-    .controls-panel {
+    .active .key-note {
+      color: white;
+    }
+    
+    .controls {
       background: var(--panel-bg);
-      padding: 15px;
       border-radius: 10px;
-      margin-top: 10px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-around;
-      gap: 10px;
+      padding: 15px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-top: 15px;
     }
     
     .control-group {
@@ -135,351 +143,154 @@
     
     .control-label {
       font-size: 0.8rem;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
       color: #aaa;
     }
     
-    .control-knob {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: linear-gradient(145deg, #3a3a3a, #1a1a1a);
-      box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-      position: relative;
-      cursor: pointer;
-    }
-    
-    .knob-indicator {
-      position: absolute;
-      width: 4px;
-      height: 15px;
-      background: var(--yamaha-red);
-      top: 5px;
-      left: 50%;
-      transform: translateX(-50%) rotate(0deg);
-      transform-origin: bottom center;
-    }
-    
-    .display {
-      background: #0a0a0a;
-      border: 2px solid #333;
-      border-radius: 5px;
-      padding: 10px;
-      font-family: 'Courier New', monospace;
-      text-align: center;
-      margin-bottom: 10px;
-      min-height: 20px;
-    }
-    
-    #installBanner {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      right: 20px;
-      background: rgba(0, 0, 0, 0.9);
-      color: white;
-      padding: 15px;
-      text-align: center;
-      display: none;
-      z-index: 1000;
-      border-radius: 10px;
-      border-top: 2px solid var(--yamaha-red);
-    }
-    
-    #installBtn {
-      background: var(--yamaha-red);
-      color: white;
-      border: none;
-      padding: 8px 15px;
-      margin: 5px;
-      border-radius: 5px;
+    .control-value {
       font-size: 0.9rem;
-      cursor: pointer;
+      color: white;
+      margin-top: 5px;
     }
     
-    @media (max-width: 500px) {
+    select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #333;
+      color: white;
+    }
+    
+    @media (max-width: 400px) {
+      .key {
+        padding: 12px 3px;
+        min-height: 50px;
+      }
+      
       .key-label {
         font-size: 1rem;
       }
       
-      .control-knob {
-        width: 40px;
-        height: 40px;
-      }
-      
-      .brand-header h1 {
-        font-size: 1.2rem;
+      .controls {
+        grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
 <body>
-  <div class="brand-header">
-    <h1><span class="logo">YAMAHA</span> SYNTHESIZER</h1>
+  <div class="header">
+    <h1 class="title">Airy Keys</h1>
+    <div class="subtitle">< Oct 3 > Do</div>
   </div>
   
   <div class="synth-container">
-    <div class="display" id="display">Ready</div>
+    <div class="display" id="display">Presiona una tecla</div>
     
     <div class="keyboard">
-      <!-- Tecla C -->
-      <div class="key white-key" data-note="C4" id="key-c">
-        <div class="key-label">C</div>
+      <div class="key-row">
+        <div class="key" data-note="C4" id="key-c4">
+          <div class="key-label">C4</div>
+          <div class="key-note">Do</div>
+        </div>
+        <div class="key" data-note="D4" id="key-d4">
+          <div class="key-label">D4</div>
+          <div class="key-note">Re</div>
+        </div>
+        <div class="key" data-note="E4" id="key-e4">
+          <div class="key-label">E4</div>
+          <div class="key-note">Mi</div>
+        </div>
       </div>
       
-      <!-- Tecla D -->
-      <div class="key white-key" data-note="D4" id="key-d">
-        <div class="key-label">D</div>
+      <div class="key-row">
+        <div class="key" data-note="F4" id="key-f4">
+          <div class="key-label">F4</div>
+          <div class="key-note">Fa</div>
+        </div>
+        <div class="key" data-note="G4" id="key-g4">
+          <div class="key-label">G4</div>
+          <div class="key-note">Sol</div>
+        </div>
+        <div class="key" data-note="A4" id="key-a4">
+          <div class="key-label">A4</div>
+          <div class="key-note">La</div>
+        </div>
       </div>
       
-      <!-- Tecla E -->
-      <div class="key white-key" data-note="E4" id="key-e">
-        <div class="key-label">E</div>
-      </div>
-      
-      <!-- Tecla F -->
-      <div class="key white-key" data-note="F4" id="key-f">
-        <div class="key-label">F</div>
-      </div>
-      
-      <!-- Tecla G -->
-      <div class="key white-key" data-note="G4" id="key-g">
-        <div class="key-label">G</div>
-      </div>
-      
-      <!-- Teclas negras -->
-      <div class="key black-key" data-note="C#4" id="key-cs">
-        <div class="key-label">C#</div>
-      </div>
-      
-      <div class="key black-key" data-note="D#4" id="key-ds">
-        <div class="key-label">D#</div>
-      </div>
-      
-      <div class="key black-key" data-note="F#4" id="key-fs">
-        <div class="key-label">F#</div>
-      </div>
-      
-      <div class="key black-key" data-note="G#4" id="key-gs">
-        <div class="key-label">G#</div>
-      </div>
-      
-      <div class="key black-key" data-note="A#4" id="key-as">
-        <div class="key-label">A#</div>
+      <div class="key-row">
+        <div class="key" data-note="B4" id="key-b4">
+          <div class="key-label">B4</div>
+          <div class="key-note">Si</div>
+        </div>
+        <div class="key" data-note="C5" id="key-c5">
+          <div class="key-label">C5</div>
+          <div class="key-note">Do</div>
+        </div>
+        <div class="key" data-note="Fx" id="key-fx">
+          <div class="key-label">Fx</div>
+          <div class="key-note">Ninguno</div>
+        </div>
       </div>
     </div>
     
-    <div class="controls-panel">
+    <div class="controls">
       <div class="control-group">
-        <div class="control-label">VOLUME</div>
-        <div class="control-knob" id="volume-knob">
-          <div class="knob-indicator" style="transform: translateX(-50%) rotate(45deg);"></div>
-        </div>
+        <div class="control-label">INSTRUMENTO</div>
+        <select id="instrument-select">
+          <option value="sine">Sine</option>
+          <option value="square">Square</option>
+          <option value="sawtooth">Sawtooth</option>
+          <option value="triangle">Triangle</option>
+        </select>
       </div>
       
       <div class="control-group">
-        <div class="control-label">OSC TYPE</div>
-        <div class="control-knob" id="osc-knob">
-          <div class="knob-indicator" style="transform: translateX(-50%) rotate(90deg);"></div>
-        </div>
-      </div>
-      
-      <div class="control-group">
-        <div class="control-label">ATTACK</div>
-        <div class="control-knob" id="attack-knob">
-          <div class="knob-indicator" style="transform: translateX(-50%) rotate(0deg);"></div>
-        </div>
-      </div>
-      
-      <div class="control-group">
-        <div class="control-label">RELEASE</div>
-        <div class="control-knob" id="release-knob">
-          <div class="knob-indicator" style="transform: translateX(-50%) rotate(135deg);"></div>
-        </div>
+        <div class="control-label">OCTAVA</div>
+        <select id="octave-select">
+          <option value="3">Oct 3</option>
+          <option value="4" selected>Oct 4</option>
+          <option value="5">Oct 5</option>
+        </select>
       </div>
     </div>
-  </div>
-  
-  <div id="installBanner">
-    <p>Instala este sintetizador para mejor experiencia</p>
-    <button id="installBtn">INSTALAR</button>
   </div>
 
   <script>
-    // Configuración PWA
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('data:application/javascript;base64,KGZ1bmN0aW9uKCkgewogIHNlbGYuYWRkRXZlbnRMaXN0ZW5lcignaW5zdGFsbCcsIGV2ZW50ID0+IHsKICAgIGV2ZW50LndhaXRVbnRpbCgKICAgICAgY2FjaGVzLm9wZW4oJ3N5bnRoLXB3YS1jYWNoZScpCiAgICAgICAgLnRoZW4oY2FjaGUgPT4gY2FjaGUuYWRkQWxsKFsnLyddKSkKICAgICk7CiAgfSk7CgogIHNlbGYuYWRkRXZlbnRMaXN0ZW5lcignZmV0Y2gnLCBldmVudCA9PiB7CiAgICBldmVudC5yZXNwb25kV2l0aCgKICAgICAgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QpCiAgICAgICAgLnRoZW4ocmVzcG9uc2UgPT4gcmVzcG9uc2UgfHwgZmV0Y2goZXZlbnQucmVxdWVzdCkpCiAgICApOwogIH0pOwp9KSgpOw==')
-          .then(registration => {
-            console.log('ServiceWorker registrado');
-          }).catch(error => {
-            console.log('Error al registrar ServiceWorker:', error);
-          });
-      });
-    }
-
-    let deferredPrompt;
-    const installBanner = document.getElementById('installBanner');
-    const installBtn = document.getElementById('installBtn');
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      installBanner.style.display = 'block';
-    });
-
-    installBtn.addEventListener('click', () => {
-      installBanner.style.display = 'none';
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(choiceResult => {
-        if (choiceResult.outcome === 'accepted') {
-          console.log('Usuario instaló la PWA');
-        }
-        deferredPrompt = null;
-      });
-    });
-
-    // Sintetizador profesional
-    class ProfessionalSynth {
+    class AirySynth {
       constructor() {
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
         this.oscillators = {};
         this.currentWaveform = 'sine';
-        this.volume = 0.5;
-        this.attackTime = 0.1;
-        this.releaseTime = 0.3;
+        this.octave = 4;
         this.display = document.getElementById('display');
         
-        this.initKnobs();
+        // Precargar sonidos
+        this.preloadSounds();
+        
+        // Inicializar controles
+        this.initControls();
         this.initKeyboard();
+        this.initKeyBindings();
       }
       
-      initKnobs() {
-        const knobs = {
-          'volume-knob': { 
-            min: 0, 
-            max: 1, 
-            step: 0.1,
-            onChange: (value) => { 
-              this.volume = value; 
-              this.updateDisplay(`Vol: ${Math.round(value * 100)}%`);
-            }
-          },
-          'osc-knob': {
-            min: 0,
-            max: 3,
-            step: 1,
-            values: ['sine', 'square', 'sawtooth', 'triangle'],
-            onChange: (value) => { 
-              this.currentWaveform = this.knobs['osc-knob'].values[value];
-              this.updateDisplay(`Osc: ${this.currentWaveform}`);
-            }
-          },
-          'attack-knob': {
-            min: 0,
-            max: 1,
-            step: 0.1,
-            onChange: (value) => { 
-              this.attackTime = value;
-              this.updateDisplay(`Attack: ${value.toFixed(1)}s`);
-            }
-          },
-          'release-knob': {
-            min: 0.1,
-            max: 2,
-            step: 0.1,
-            onChange: (value) => { 
-              this.releaseTime = value;
-              this.updateDisplay(`Release: ${value.toFixed(1)}s`);
-            }
-          }
-        };
+      preloadSounds() {
+        // Crear osciladores fantasma para precargar
+        const notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+        notes.forEach(note => {
+          this.createOscillator(`${note}4`, 0.001);
+        });
+      }
+      
+      initControls() {
+        document.getElementById('instrument-select').addEventListener('change', (e) => {
+          this.currentWaveform = e.target.value;
+          this.updateDisplay(`Instrumento: ${e.target.value}`);
+        });
         
-        this.knobs = knobs;
-        
-        Object.keys(knobs).forEach(knobId => {
-          const knob = document.getElementById(knobId);
-          const indicator = knob.querySelector('.knob-indicator');
-          let isDragging = false;
-          let startAngle = 0;
-          let startRotation = 0;
-          let currentValue = 0;
-          
-          // Configuración inicial
-          const config = knobs[knobId];
-          const range = config.max - config.min;
-          const steps = range / config.step;
-          const anglePerStep = 270 / steps;
-          
-          // Eventos táctiles
-          knob.addEventListener('touchstart', handleStart);
-          knob.addEventListener('mousedown', handleStart);
-          
-          function handleStart(e) {
-            e.preventDefault();
-            isDragging = true;
-            const rect = knob.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            startAngle = Math.atan2(clientY - centerY, clientX - centerX) * 180 / Math.PI;
-            startRotation = parseInt(indicator.style.transform.match(/rotate\(([0-9]+)deg\)/)[1]) || 0;
-            document.addEventListener('touchmove', handleMove);
-            document.addEventListener('mousemove', handleMove);
-            document.addEventListener('touchend', handleEnd);
-            document.addEventListener('mouseup', handleEnd);
-          }
-          
-          function handleMove(e) {
-            if (!isDragging) return;
-            e.preventDefault();
-            const rect = knob.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            let angle = Math.atan2(clientY - centerY, clientX - centerX) * 180 / Math.PI;
-            
-            // Calcular diferencia de ángulo
-            let diff = angle - startAngle;
-            if (diff > 180) diff -= 360;
-            if (diff < -180) diff += 360;
-            
-            // Aplicar rotación limitada
-            let newRotation = startRotation + diff;
-            newRotation = Math.max(-135, Math.min(135, newRotation));
-            
-            // Actualizar visual
-            indicator.style.transform = `translateX(-50%) rotate(${newRotation}deg)`;
-            
-            // Calcular valor
-            const normalized = (newRotation + 135) / 270; // 0-1
-            let value;
-            
-            if (config.values) {
-              // Knob con valores discretos
-              const stepIndex = Math.round(normalized * (config.values.length - 1));
-              value = stepIndex;
-              currentValue = value;
-              config.onChange(value);
-            } else {
-              // Knob con rango continuo
-              value = config.min + (normalized * range);
-              value = Math.round(value / config.step) * config.step; // Snap to steps
-              value = parseFloat(value.toFixed(2)); // Limitar decimales
-              currentValue = value;
-              config.onChange(value);
-            }
-          }
-          
-          function handleEnd() {
-            isDragging = false;
-            document.removeEventListener('touchmove', handleMove);
-            document.removeEventListener('mousemove', handleMove);
-            document.removeEventListener('touchend', handleEnd);
-            document.removeEventListener('mouseup', handleEnd);
-          }
+        document.getElementById('octave-select').addEventListener('change', (e) => {
+          this.octave = parseInt(e.target.value);
+          this.updateDisplay(`Octava: ${e.target.value}`);
         });
       }
       
@@ -517,48 +328,44 @@
             }
           });
         });
-        
-        // Eventos de teclado
+      }
+      
+      initKeyBindings() {
         document.addEventListener('keydown', (e) => {
           const keyMap = {
-            'a': 'C4', 'w': 'C#4',
-            's': 'D4', 'e': 'D#4',
-            'd': 'E4',
-            'f': 'F4', 't': 'F#4',
-            'g': 'G4', 'y': 'G#4',
-            'h': 'A4', 'u': 'A#4'
+            'a': 'C4', 's': 'D4', 'd': 'E4',
+            'f': 'F4', 'g': 'G4', 'h': 'A4',
+            'j': 'B4', 'k': 'C5', 'l': 'Fx'
           };
           
-          if (keyMap[e.key.toLowerCase()]) {
-            const note = keyMap[e.key.toLowerCase()];
+          const note = keyMap[e.key.toLowerCase()];
+          if (note && !this.oscillators[note]) {
             this.playNote(note);
-            document.getElementById(`key-${note.toLowerCase().replace('#', 's')}`).classList.add('active');
+            document.getElementById(`key-${note.toLowerCase()}`).classList.add('active');
           }
         });
         
         document.addEventListener('keyup', (e) => {
           const keyMap = {
-            'a': 'C4', 'w': 'C#4',
-            's': 'D4', 'e': 'D#4',
-            'd': 'E4',
-            'f': 'F4', 't': 'F#4',
-            'g': 'G4', 'y': 'G#4',
-            'h': 'A4', 'u': 'A#4'
+            'a': 'C4', 's': 'D4', 'd': 'E4',
+            'f': 'F4', 'g': 'G4', 'h': 'A4',
+            'j': 'B4', 'k': 'C5', 'l': 'Fx'
           };
           
-          if (keyMap[e.key.toLowerCase()]) {
-            const note = keyMap[e.key.toLowerCase()];
+          const note = keyMap[e.key.toLowerCase()];
+          if (note) {
             this.stopNote(note);
-            document.getElementById(`key-${note.toLowerCase().replace('#', 's')}`).classList.remove('active');
+            document.getElementById(`key-${note.toLowerCase()}`).classList.remove('active');
           }
         });
       }
       
       playNote(note) {
-        if (this.oscillators[note]) return; // Ya está sonando
+        if (note === 'Fx') return;
+        if (this.oscillators[note]) return;
         
         const freq = this.getNoteFrequency(note);
-        this.updateDisplay(`Playing: ${note} (${Math.round(freq)}Hz)`);
+        this.updateDisplay(`Tocando: ${note} (${Math.round(freq)}Hz)`);
         
         const osc = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
@@ -566,12 +373,10 @@
         osc.type = this.currentWaveform;
         osc.frequency.value = freq;
         
+        // Configuración para respuesta instantánea
         gainNode.gain.value = 0;
         gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(
-          this.volume, 
-          this.audioContext.currentTime + this.attackTime
-        );
+        gainNode.gain.linearRampToValueAtTime(0.5, this.audioContext.currentTime + 0.01);
         
         osc.connect(gainNode);
         gainNode.connect(this.audioContext.destination);
@@ -581,36 +386,51 @@
       }
       
       stopNote(note) {
+        if (note === 'Fx') return;
         if (!this.oscillators[note]) return;
         
         const { osc, gainNode } = this.oscillators[note];
         
+        // Liberación rápida pero suave
         gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
-        gainNode.gain.setValueAtTime(
-          gainNode.gain.value, 
-          this.audioContext.currentTime
-        );
-        gainNode.gain.linearRampToValueAtTime(
-          0, 
-          this.audioContext.currentTime + this.releaseTime
-        );
+        gainNode.gain.setValueAtTime(gainNode.gain.value, this.audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.05);
         
         setTimeout(() => {
           osc.stop();
           osc.disconnect();
           gainNode.disconnect();
           delete this.oscillators[note];
-        }, this.releaseTime * 1000);
+        }, 50);
+      }
+      
+      createOscillator(note, duration) {
+        const freq = this.getNoteFrequency(note);
+        const osc = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        osc.type = this.currentWaveform;
+        osc.frequency.value = freq;
+        gainNode.gain.value = 0;
+        
+        osc.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        osc.start();
+        osc.stop(this.audioContext.currentTime + duration);
       }
       
       getNoteFrequency(note) {
         const notes = {
-          'C4': 261.63, 'C#4': 277.18,
-          'D4': 293.66, 'D#4': 311.13,
-          'E4': 329.63,
-          'F4': 349.23, 'F#4': 369.99,
-          'G4': 392.00, 'G#4': 415.30,
-          'A4': 440.00, 'A#4': 466.16
+          'C3': 130.81, 'C#3': 138.59, 'D3': 146.83, 'D#3': 155.56, 'E3': 164.81,
+          'F3': 174.61, 'F#3': 185.00, 'G3': 196.00, 'G#3': 207.65, 'A3': 220.00,
+          'A#3': 233.08, 'B3': 246.94,
+          'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13, 'E4': 329.63,
+          'F4': 349.23, 'F#4': 369.99, 'G4': 392.00, 'G#4': 415.30, 'A4': 440.00,
+          'A#4': 466.16, 'B4': 493.88,
+          'C5': 523.25, 'C#5': 554.37, 'D5': 587.33, 'D#5': 622.25, 'E5': 659.25,
+          'F5': 698.46, 'F#5': 739.99, 'G5': 783.99, 'G#5': 830.61, 'A5': 880.00,
+          'A#5': 932.33, 'B5': 987.77
         };
         return notes[note] || 440;
       }
@@ -620,15 +440,14 @@
       }
     }
 
-    // Inicializar el sintetizador cuando la página cargue
+    // Inicializar el sintetizador
     window.addEventListener('load', () => {
-      const synth = new ProfessionalSynth();
-      synth.updateDisplay('Sintetizador listo');
+      const synth = new AirySynth();
       
-      // Mostrar instrucciones iniciales
+      // Mostrar instrucciones
       setTimeout(() => {
-        synth.updateDisplay('Presiona las teclas o usa A,S,D,F,G,W,E,T,Y,U');
-      }, 2000);
+        synth.updateDisplay('Usa las teclas A,S,D,F,G,H,J,K,L');
+      }, 1500);
     });
   </script>
 </body>
