@@ -3,17 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sintetizador Airy Keys</title>
+  <title>Airy Keys</title>
   <style>
     :root {
-      --bg-color: #f5f5f5;
+      --bg-color: #f8f9fa;
       --key-color: #ffffff;
       --key-active: #4a8eff;
-      --key-border: #e0e0e0;
-      --text-color: #333333;
-      --panel-bg: #2a2a2a;
-      --display-bg: #1a1a1a;
-      --highlight: #e41e26;
+      --key-border: #dee2e6;
+      --text-color: #212529;
+      --panel-bg: #2c3e50;
+      --highlight: #e74c3c;
     }
     
     * {
@@ -36,89 +35,81 @@
     }
     
     .header {
-      padding: 15px;
+      padding: 12px 10px;
       text-align: center;
       border-bottom: 1px solid var(--key-border);
+      background: white;
     }
     
     .title {
-      font-size: 1.5rem;
+      font-size: 1.3rem;
       margin: 0;
       color: var(--text-color);
+      font-weight: 600;
     }
     
     .subtitle {
-      font-size: 0.9rem;
-      color: #666;
-      margin-top: 5px;
+      font-size: 0.85rem;
+      color: #6c757d;
+      margin-top: 4px;
+    }
+    
+    .instructions {
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 8px;
+      color: #6c757d;
+      background: #f1f3f5;
+      border-bottom: 1px solid var(--key-border);
     }
     
     .synth-container {
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 15px;
-      gap: 10px;
-    }
-    
-    .display {
-      background: var(--display-bg);
-      color: white;
-      border-radius: 8px;
-      padding: 12px;
-      font-family: 'Courier New', monospace;
-      text-align: center;
-      font-size: 1rem;
-      min-height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 10px;
+      padding: 10px;
+      gap: 8px;
+      overflow: auto;
     }
     
     .keyboard {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
       margin-top: auto;
     }
     
-    .key-row {
-      display: flex;
-      gap: 8px;
-    }
-    
     .key {
-      flex: 1;
       background: var(--key-color);
       border: 1px solid var(--key-border);
-      border-radius: 8px;
-      padding: 15px 5px;
+      border-radius: 6px;
+      padding: 12px 5px;
       text-align: center;
       cursor: pointer;
       transition: all 0.05s;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      aspect-ratio: 1;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      min-height: 60px;
+      min-height: 0;
     }
     
     .key.active {
       background: var(--key-active);
-      transform: scale(0.98);
+      transform: scale(0.97);
       box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
     
     .key-label {
       font-weight: bold;
-      font-size: 1.1rem;
+      font-size: 1rem;
+      margin-bottom: 2px;
     }
     
     .key-note {
-      font-size: 0.8rem;
-      color: #666;
-      margin-top: 3px;
+      font-size: 0.75rem;
+      color: #6c757d;
     }
     
     .active .key-note {
@@ -127,53 +118,65 @@
     
     .controls {
       background: var(--panel-bg);
-      border-radius: 10px;
-      padding: 15px;
+      border-radius: 8px;
+      padding: 12px;
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-      margin-top: 15px;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 10px;
+      color: white;
     }
     
     .control-group {
       display: flex;
       flex-direction: column;
-      align-items: center;
     }
     
     .control-label {
       font-size: 0.8rem;
-      margin-bottom: 8px;
-      color: #aaa;
-    }
-    
-    .control-value {
-      font-size: 0.9rem;
-      color: white;
-      margin-top: 5px;
+      margin-bottom: 6px;
+      color: #adb5bd;
     }
     
     select {
       width: 100%;
       padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #444;
-      background: #333;
+      border-radius: 5px;
+      border: 1px solid #495057;
+      background: #343a40;
       color: white;
+      font-size: 0.9rem;
     }
     
-    @media (max-width: 400px) {
+    @media (max-height: 600px) {
       .key {
-        padding: 12px 3px;
-        min-height: 50px;
+        padding: 8px 3px;
       }
       
       .key-label {
-        font-size: 1rem;
+        font-size: 0.9rem;
+      }
+      
+      .key-note {
+        font-size: 0.7rem;
       }
       
       .controls {
-        grid-template-columns: 1fr;
+        padding: 8px;
+      }
+    }
+    
+    @media (max-width: 350px) {
+      .key-label {
+        font-size: 0.85rem;
+      }
+      
+      .key-note {
+        font-size: 0.65rem;
+      }
+      
+      select {
+        padding: 6px;
       }
     }
   </style>
@@ -184,53 +187,47 @@
     <div class="subtitle">< Oct 3 > Do</div>
   </div>
   
+  <div class="instructions">Usa las teclas A, S, D, F, G, H, J, K, L</div>
+  
   <div class="synth-container">
-    <div class="display" id="display">Presiona una tecla</div>
-    
     <div class="keyboard">
-      <div class="key-row">
-        <div class="key" data-note="C4" id="key-c4">
-          <div class="key-label">C4</div>
-          <div class="key-note">Do</div>
-        </div>
-        <div class="key" data-note="D4" id="key-d4">
-          <div class="key-label">D4</div>
-          <div class="key-note">Re</div>
-        </div>
-        <div class="key" data-note="E4" id="key-e4">
-          <div class="key-label">E4</div>
-          <div class="key-note">Mi</div>
-        </div>
+      <div class="key" data-note="C4" id="key-c4">
+        <div class="key-label">C4</div>
+        <div class="key-note">Do</div>
+      </div>
+      <div class="key" data-note="D4" id="key-d4">
+        <div class="key-label">D4</div>
+        <div class="key-note">Re</div>
+      </div>
+      <div class="key" data-note="E4" id="key-e4">
+        <div class="key-label">E4</div>
+        <div class="key-note">Mi</div>
       </div>
       
-      <div class="key-row">
-        <div class="key" data-note="F4" id="key-f4">
-          <div class="key-label">F4</div>
-          <div class="key-note">Fa</div>
-        </div>
-        <div class="key" data-note="G4" id="key-g4">
-          <div class="key-label">G4</div>
-          <div class="key-note">Sol</div>
-        </div>
-        <div class="key" data-note="A4" id="key-a4">
-          <div class="key-label">A4</div>
-          <div class="key-note">La</div>
-        </div>
+      <div class="key" data-note="F4" id="key-f4">
+        <div class="key-label">F4</div>
+        <div class="key-note">Fa</div>
+      </div>
+      <div class="key" data-note="G4" id="key-g4">
+        <div class="key-label">G4</div>
+        <div class="key-note">Sol</div>
+      </div>
+      <div class="key" data-note="A4" id="key-a4">
+        <div class="key-label">A4</div>
+        <div class="key-note">La</div>
       </div>
       
-      <div class="key-row">
-        <div class="key" data-note="B4" id="key-b4">
-          <div class="key-label">B4</div>
-          <div class="key-note">Si</div>
-        </div>
-        <div class="key" data-note="C5" id="key-c5">
-          <div class="key-label">C5</div>
-          <div class="key-note">Do</div>
-        </div>
-        <div class="key" data-note="Fx" id="key-fx">
-          <div class="key-label">Fx</div>
-          <div class="key-note">Ninguno</div>
-        </div>
+      <div class="key" data-note="B4" id="key-b4">
+        <div class="key-label">B4</div>
+        <div class="key-note">Si</div>
+      </div>
+      <div class="key" data-note="C5" id="key-c5">
+        <div class="key-label">C5</div>
+        <div class="key-note">Do</div>
+      </div>
+      <div class="key" data-note="Fx" id="key-fx">
+        <div class="key-label">Fx</div>
+        <div class="key-note">Ninguno</div>
       </div>
     </div>
     
@@ -263,34 +260,37 @@
         this.oscillators = {};
         this.currentWaveform = 'sine';
         this.octave = 4;
-        this.display = document.getElementById('display');
         
-        // Precargar sonidos
+        // Precargar sonidos para eliminar delay
         this.preloadSounds();
-        
-        // Inicializar controles
         this.initControls();
         this.initKeyboard();
         this.initKeyBindings();
       }
       
       preloadSounds() {
-        // Crear osciladores fantasma para precargar
+        // Crear y liberar inmediatamente osciladores para precache
         const notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
         notes.forEach(note => {
-          this.createOscillator(`${note}4`, 0.001);
+          const osc = this.audioContext.createOscillator();
+          const gain = this.audioContext.createGain();
+          osc.type = this.currentWaveform;
+          osc.frequency.value = this.getNoteFrequency(`${note}4`);
+          gain.gain.value = 0;
+          osc.connect(gain);
+          gain.connect(this.audioContext.destination);
+          osc.start();
+          osc.stop(this.audioContext.currentTime + 0.001);
         });
       }
       
       initControls() {
         document.getElementById('instrument-select').addEventListener('change', (e) => {
           this.currentWaveform = e.target.value;
-          this.updateDisplay(`Instrumento: ${e.target.value}`);
         });
         
         document.getElementById('octave-select').addEventListener('change', (e) => {
           this.octave = parseInt(e.target.value);
-          this.updateDisplay(`Octava: ${e.target.value}`);
         });
       }
       
@@ -298,33 +298,29 @@
         const keys = document.querySelectorAll('.key');
         
         keys.forEach(key => {
-          // Eventos táctiles
+          // Touch events
           key.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            this.playNote(key.dataset.note);
-            key.classList.add('active');
-          });
+            this.handleKeyPress(key);
+          }, { passive: false });
           
-          key.addEventListener('touchend', () => {
-            this.stopNote(key.dataset.note);
-            key.classList.remove('active');
-          });
+          key.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.handleKeyRelease(key);
+          }, { passive: false });
           
-          // Eventos de ratón
+          // Mouse events
           key.addEventListener('mousedown', () => {
-            this.playNote(key.dataset.note);
-            key.classList.add('active');
+            this.handleKeyPress(key);
           });
           
           key.addEventListener('mouseup', () => {
-            this.stopNote(key.dataset.note);
-            key.classList.remove('active');
+            this.handleKeyRelease(key);
           });
           
           key.addEventListener('mouseleave', () => {
             if (key.classList.contains('active')) {
-              this.stopNote(key.dataset.note);
-              key.classList.remove('active');
+              this.handleKeyRelease(key);
             }
           });
         });
@@ -339,9 +335,11 @@
           };
           
           const note = keyMap[e.key.toLowerCase()];
-          if (note && !this.oscillators[note]) {
-            this.playNote(note);
-            document.getElementById(`key-${note.toLowerCase()}`).classList.add('active');
+          if (note) {
+            const keyElement = document.getElementById(`key-${note.toLowerCase()}`);
+            if (keyElement && !keyElement.classList.contains('active')) {
+              this.handleKeyPress(keyElement);
+            }
           }
         });
         
@@ -354,18 +352,32 @@
           
           const note = keyMap[e.key.toLowerCase()];
           if (note) {
-            this.stopNote(note);
-            document.getElementById(`key-${note.toLowerCase()}`).classList.remove('active');
+            const keyElement = document.getElementById(`key-${note.toLowerCase()}`);
+            if (keyElement && keyElement.classList.contains('active')) {
+              this.handleKeyRelease(keyElement);
+            }
           }
         });
       }
       
+      handleKeyPress(key) {
+        if (key.dataset.note === 'Fx') return;
+        
+        key.classList.add('active');
+        this.playNote(key.dataset.note);
+      }
+      
+      handleKeyRelease(key) {
+        key.classList.remove('active');
+        if (key.dataset.note !== 'Fx') {
+          this.stopNote(key.dataset.note);
+        }
+      }
+      
       playNote(note) {
-        if (note === 'Fx') return;
         if (this.oscillators[note]) return;
         
         const freq = this.getNoteFrequency(note);
-        this.updateDisplay(`Tocando: ${note} (${Math.round(freq)}Hz)`);
         
         const osc = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
@@ -386,7 +398,6 @@
       }
       
       stopNote(note) {
-        if (note === 'Fx') return;
         if (!this.oscillators[note]) return;
         
         const { osc, gainNode } = this.oscillators[note];
@@ -394,60 +405,35 @@
         // Liberación rápida pero suave
         gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
         gainNode.gain.setValueAtTime(gainNode.gain.value, this.audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.05);
+        gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.03);
         
         setTimeout(() => {
           osc.stop();
           osc.disconnect();
           gainNode.disconnect();
           delete this.oscillators[note];
-        }, 50);
-      }
-      
-      createOscillator(note, duration) {
-        const freq = this.getNoteFrequency(note);
-        const osc = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-        
-        osc.type = this.currentWaveform;
-        osc.frequency.value = freq;
-        gainNode.gain.value = 0;
-        
-        osc.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-        
-        osc.start();
-        osc.stop(this.audioContext.currentTime + duration);
+        }, 30);
       }
       
       getNoteFrequency(note) {
         const notes = {
-          'C3': 130.81, 'C#3': 138.59, 'D3': 146.83, 'D#3': 155.56, 'E3': 164.81,
-          'F3': 174.61, 'F#3': 185.00, 'G3': 196.00, 'G#3': 207.65, 'A3': 220.00,
-          'A#3': 233.08, 'B3': 246.94,
-          'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13, 'E4': 329.63,
-          'F4': 349.23, 'F#4': 369.99, 'G4': 392.00, 'G#4': 415.30, 'A4': 440.00,
-          'A#4': 466.16, 'B4': 493.88,
-          'C5': 523.25, 'C#5': 554.37, 'D5': 587.33, 'D#5': 622.25, 'E5': 659.25,
-          'F5': 698.46, 'F#5': 739.99, 'G5': 783.99, 'G#5': 830.61, 'A5': 880.00,
-          'A#5': 932.33, 'B5': 987.77
+          'C3': 130.81, 'D3': 146.83, 'E3': 164.81,
+          'F3': 174.61, 'G3': 196.00, 'A3': 220.00,
+          'B3': 246.94,
+          'C4': 261.63, 'D4': 293.66, 'E4': 329.63,
+          'F4': 349.23, 'G4': 392.00, 'A4': 440.00,
+          'B4': 493.88,
+          'C5': 523.25, 'D5': 587.33, 'E5': 659.25,
+          'F5': 698.46, 'G5': 783.99, 'A5': 880.00,
+          'B5': 987.77
         };
         return notes[note] || 440;
       }
-      
-      updateDisplay(text) {
-        this.display.textContent = text;
-      }
     }
 
-    // Inicializar el sintetizador
+    // Inicializar el sintetizador al cargar
     window.addEventListener('load', () => {
-      const synth = new AirySynth();
-      
-      // Mostrar instrucciones
-      setTimeout(() => {
-        synth.updateDisplay('Usa las teclas A,S,D,F,G,H,J,K,L');
-      }, 1500);
+      new AirySynth();
     });
   </script>
 </body>
