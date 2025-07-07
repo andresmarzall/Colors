@@ -1,270 +1,679 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2a3b4c">
+  <meta name="description" content="Juego de puntería con arco y flecha">
   <title>Arco y Flecha Retro</title>
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkFyY28geSBGbGVjaGEgUmV0cm8iLAogICJzaG9ydF9uYW1lIjogIkFyY29GbGVjaGEiLAogICJkZXNjcmlwdGlvbiI6ICJKdWVnbyBkZSBwdW50ZXLDrWEgY29uIGFyY28geSBmbGVjaGEiLAogICJzdGFydF91cmwiOiAiLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzJhM2I0YyIsCiAgInRoZW1lX2NvbG9yIjogIiMyYTNiNGMiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICIvIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciLAogICAgICAicHVycG9zZSI6ICJhbnkiCiAgICB9CiAgXQp9">
   <style>
+    :root {
+      --primary: #2a3b4c;
+      --secondary: #4ab;
+      --accent: #e74c3c;
+      --text: #ecf0f1;
+      --bg: #1a2b3c;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
     body {
       margin: 0;
-      background: #111;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       overflow: hidden;
-      font-family: Arial, sans-serif;
       touch-action: manipulation;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
+    
+    #game-container {
+      position: relative;
+      flex-grow: 1;
+      overflow: hidden;
+    }
+    
     canvas {
       display: block;
-      background: linear-gradient(to bottom, #4ab, #2a8);
-    }
-    .controls {
-      position: fixed;
-      bottom: 0;
+      background: linear-gradient(to bottom, var(--secondary), #2a8);
       width: 100%;
+      height: 100%;
+    }
+    
+    .ui-panel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 10px;
       display: flex;
       justify-content: space-between;
-      padding: 10px;
-      box-sizing: border-box;
-      background: rgba(0, 0, 0, 0.5);
+      pointer-events: none;
     }
+    
+    .score-panel, .game-over {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 15px;
+      border-radius: 20px;
+      font-size: 1.2rem;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+    
+    .game-over {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      display: none;
+      pointer-events: auto;
+    }
+    
+    .game-over button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin-top: 15px;
+      border-radius: 20px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    
+    .controls {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
     .arrow-buttons {
       display: grid;
       grid-template-areas:
         ". up ."
         "left . right"
         ". down .";
-      gap: 5px;
+      gap: 8px;
     }
+    
     .arrow-btn {
-      width: 50px;
-      height: 50px;
-      background: #333;
-      border-radius: 8px;
+      width: 60px;
+      height: 60px;
+      background: rgba(0, 0, 0, 0.7);
+      border-radius: 15px;
       display: flex;
       justify-content: center;
       align-items: center;
       color: white;
-      font-size: 24px;
-      user-select: none;
+      font-size: 28px;
+      cursor: pointer;
       touch-action: manipulation;
+      transition: all 0.1s;
+      box-shadow: 0 3px 5px rgba(0, 0, 0, 0.3);
     }
+    
     .arrow-btn:active {
-      background: #555;
+      transform: scale(0.95);
+      background: rgba(255, 255, 255, 0.2);
     }
+    
     #up { grid-area: up; }
     #left { grid-area: left; }
     #right { grid-area: right; }
     #down { grid-area: down; }
-    .button {
+    
+    .action-btn {
       width: 80px;
       height: 80px;
-      background: #c33;
+      background: var(--accent);
       border-radius: 50%;
-      text-align: center;
-      line-height: 80px;
-      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
       font-weight: bold;
-      font-size: 18px;
-      user-select: none;
+      font-size: 1.2rem;
+      cursor: pointer;
       touch-action: manipulation;
+      transition: all 0.1s;
+      box-shadow: 0 3px 5px rgba(0, 0, 0, 0.3);
     }
-    .button:active {
-      background: #e55;
+    
+    .action-btn:active {
+      transform: scale(0.95);
+      background: #c0392b;
     }
-    .score {
+    
+    @media (max-width: 500px) {
+      .arrow-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+      }
+      
+      .action-btn {
+        width: 70px;
+        height: 70px;
+        font-size: 1rem;
+      }
+    }
+    
+    #installBanner {
+      position: fixed;
+      bottom: 100px;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 15px;
+      text-align: center;
+      display: none;
+      z-index: 1000;
+      border-top: 2px solid var(--accent);
+    }
+    
+    #installBanner button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      margin: 5px;
+      border-radius: 5px;
+      font-size: 0.9rem;
+    }
+    
+    /* Emoji como icono para PWA */
+    .app-icon {
       position: fixed;
       top: 10px;
-      left: 10px;
-      color: white;
-      font-size: 20px;
-      background: rgba(0, 0, 0, 0.5);
-      padding: 5px 10px;
-      border-radius: 5px;
+      right: 10px;
+      font-size: 24px;
+      z-index: 1000;
+      display: none;
     }
   </style>
 </head>
 <body>
-  <div class="score" id="score">Objetivos: 0</div>
-  <canvas id="game"></canvas>
+  <div class="app-icon">🏹</div>
+  
+  <div id="game-container">
+    <canvas id="game"></canvas>
+    
+    <div class="ui-panel">
+      <div class="score-panel">
+        🎯 <span id="score">0</span> | 
+        🏹 <span id="arrows">10</span>
+      </div>
+    </div>
+    
+    <div class="game-over" id="gameOver">
+      <h2>¡Juego Terminado!</h2>
+      <p>Puntuación: <span id="finalScore">0</span> 🏆</p>
+      <button id="restartBtn">Jugar de nuevo 🔄</button>
+    </div>
+  </div>
+  
   <div class="controls">
     <div class="arrow-buttons">
-      <div class="arrow-btn" id="up">↑</div>
-      <div class="arrow-btn" id="left">←</div>
-      <div class="arrow-btn" id="right">→</div>
-      <div class="arrow-btn" id="down">↓</div>
+      <div class="arrow-btn" id="up">⬆️</div>
+      <div class="arrow-btn" id="left">⬅️</div>
+      <div class="arrow-btn" id="right">➡️</div>
+      <div class="arrow-btn" id="down">⬇️</div>
     </div>
-    <div class="button" id="shoot">FIRE</div>
+    <div class="action-btn" id="shoot">DISPARAR</div>
+  </div>
+  
+  <div id="installBanner">
+    <p>Instala este juego para una mejor experiencia 📲</p>
+    <button id="installBtn">Instalar ⬇️</button>
+    <button id="dismissBtn">Cerrar ❌</button>
   </div>
 
   <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
-    let width = window.innerWidth;
-    let height = window.innerHeight * 0.8;
-    canvas.width = width;
-    canvas.height = height;
-
-    // Sonidos mejorados
-    const shootSound = new Audio();
-    shootSound.src = 'data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...'; // Sonido simplificado
-
-    const hitSound = new Audio();
-    hitSound.src = 'data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...'; // Sonido simplificado
-
-    // Player
-    const player = { 
-      x: width / 2, 
-      y: height - 60,
-      speed: 5,
-      size: 20
-    };
-    
-    const arrows = [];
-    const targets = [];
-    let score = 0;
-    const scoreElement = document.getElementById("score");
-
-    // Crear objetivos iniciales
-    function createTargets(count) {
-      for (let i = 0; i < count; i++) {
-        targets.push({
-          x: Math.random() * (width - 50),
-          y: Math.random() * height / 2,
-          dx: (1 + Math.random() * 3) * (Math.random() > 0.5 ? 1 : -1),
-          size: 30 + Math.random() * 20
-        });
-      }
+    // Configuración PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('data:application/javascript;base64,KGZ1bmN0aW9uKCkgewogIHNlbGYuYWRkRXZlbnRMaXN0ZW5lcignaW5zdGFsbCcsIGV2ZW50ID0+IHsKICAgIGV2ZW50LndhaXRVbnRpbCgKICAgICAgY2FjaGVzLm9wZW4oJ2FyY28tZmxlY2hhLXYxJykKICAgICAgICAudGhlbihjYWNoZSA9PiBjYWNoZS5hZGRBbGwoWwogICAgICAgICAgJy8nLAogICAgICAgICAgJ2luZGV4Lmh0bWwnLAogICAgICAgICAgJ3N0eWxlcy5jc3MnLAogICAgICAgICAgJ2dhbWUuanMnCiAgICAgICAgXSkpCiAgICApOwogIH0pOwoKICBzZWxmLmFkZEV2ZW50TGlzdGVuZXIoJ2ZldGNoJywgZXZlbnQgPT4gewogICAgZXZlbnQucmVzcG9uZFdpdGgoCiAgICAgIGNhY2hlcy5tYXRjaChldmVudC5yZXF1ZXN0KQogICAgICAgIC50aGVuKHJlc3BvbnNlID0+IHJlc3BvbnNlIHx8IGZldGNoKGV2ZW50LnJlcXVlc3QpKQogICAgKTsKICB9KTsKfSkoKTs=')
+          .then(registration => {
+            console.log('ServiceWorker registrado con éxito:', registration.scope);
+          }).catch(error => {
+            console.log('Error al registrar ServiceWorker:', error);
+          });
+      });
     }
-    createTargets(5);
 
-    // Controles táctiles
-    let moveX = 0;
-    let moveY = 0;
+    let deferredPrompt;
+    const installBanner = document.getElementById('installBanner');
+    const installBtn = document.getElementById('installBtn');
+    const dismissBtn = document.getElementById('dismissBtn');
 
-    // Configurar eventos para los botones de flecha
-    const setupButton = (id, x, y) => {
-      const btn = document.getElementById(id);
-      const handleStart = () => { moveX += x; moveY += y; };
-      const handleEnd = () => { moveX -= x; moveY -= y; };
-      
-      btn.addEventListener('touchstart', handleStart);
-      btn.addEventListener('mousedown', handleStart);
-      btn.addEventListener('touchend', handleEnd);
-      btn.addEventListener('mouseup', handleEnd);
-      btn.addEventListener('mouseleave', handleEnd);
-    };
-
-    setupButton('up', 0, -1);
-    setupButton('down', 0, 1);
-    setupButton('left', -1, 0);
-    setupButton('right', 1, 0);
-
-    // Disparar
-    document.getElementById("shoot").addEventListener("click", shoot);
-    document.getElementById("shoot").addEventListener("touchstart", (e) => {
+    window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
-      shoot();
+      deferredPrompt = e;
+      installBanner.style.display = 'block';
+      document.querySelector('.app-icon').style.display = 'block';
     });
 
-    function shoot() {
-      arrows.push({ 
-        x: player.x, 
-        y: player.y - player.size/2,
-        speed: 8
+    installBtn.addEventListener('click', () => {
+      installBanner.style.display = 'none';
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(choiceResult => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('Usuario aceptó instalar');
+        }
+        deferredPrompt = null;
       });
-      shootSound.currentTime = 0;
-      shootSound.play().catch(e => console.log("Error al reproducir sonido:", e));
-    }
+    });
 
-    // Dibujar elementos del juego
-    function draw() {
-      // Fondo
-      ctx.clearRect(0, 0, width, height);
-      
-      // Jugador (arco)
-      ctx.fillStyle = "#8B4513";
-      ctx.beginPath();
-      ctx.arc(player.x, player.y, player.size/2, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // Flechas
-      ctx.fillStyle = "white";
-      arrows.forEach(a => {
-        ctx.fillRect(a.x - 1, a.y, 2, 10);
-      });
+    dismissBtn.addEventListener('click', () => {
+      installBanner.style.display = 'none';
+    });
 
-      // Objetivos
-      targets.forEach(t => {
-        ctx.fillStyle = "red";
-        ctx.beginPath();
-        ctx.arc(t.x + t.size/2, t.y + t.size/2, t.size/2, 0, Math.PI * 2);
-        ctx.fill();
-      });
-    }
+    // Generador de sonidos (versión ligera)
+    class SoundGenerator {
+      constructor() {
+        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
 
-    // Actualizar lógica del juego
-    function update() {
-      // Mover jugador
-      player.x += moveX * player.speed;
-      player.y += moveY * player.speed;
-      
-      // Limitar movimiento dentro del canvas
-      player.x = Math.max(player.size/2, Math.min(width - player.size/2, player.x));
-      player.y = Math.max(player.size/2, Math.min(height - player.size/2, player.y));
-
-      // Mover flechas
-      for (let i = arrows.length - 1; i >= 0; i--) {
-        arrows[i].y -= arrows[i].speed;
-        if (arrows[i].y < 0) {
-          arrows.splice(i, 1);
+      shoot() {
+        try {
+          const oscillator = this.audioCtx.createOscillator();
+          const gainNode = this.audioCtx.createGain();
+          
+          oscillator.type = 'sawtooth';
+          oscillator.frequency.setValueAtTime(1000, this.audioCtx.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(100, this.audioCtx.currentTime + 0.3);
+          
+          gainNode.gain.setValueAtTime(0.3, this.audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.3);
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(this.audioCtx.destination);
+          
+          oscillator.start();
+          oscillator.stop(this.audioCtx.currentTime + 0.3);
+        } catch(e) {
+          console.log("Error de audio:", e);
         }
       }
 
-      // Mover objetivos y detectar colisiones
-      for (let i = targets.length - 1; i >= 0; i--) {
-        const t = targets[i];
-        t.x += t.dx;
+      hit() {
+        try {
+          const oscillator = this.audioCtx.createOscillator();
+          const gainNode = this.audioCtx.createGain();
+          
+          oscillator.type = 'square';
+          oscillator.frequency.setValueAtTime(200, this.audioCtx.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(50, this.audioCtx.currentTime + 0.2);
+          
+          gainNode.gain.setValueAtTime(0.3, this.audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.2);
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(this.audioCtx.destination);
+          
+          oscillator.start();
+          oscillator.stop(this.audioCtx.currentTime + 0.2);
+        } catch(e) {
+          console.log("Error de audio:", e);
+        }
+      }
+    }
+
+    // Inicialización del juego
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const sound = new SoundGenerator();
+    
+    let width, height;
+    let gameActive = true;
+    let score = 0;
+    let arrowsLeft = 10;
+    
+    const scoreElement = document.getElementById('score');
+    const arrowsElement = document.getElementById('arrows');
+    const gameOverPanel = document.getElementById('gameOver');
+    const finalScoreElement = document.getElementById('finalScore');
+    const restartBtn = document.getElementById('restartBtn');
+    
+    // Jugador
+    const player = {
+      x: 0,
+      y: 0,
+      size: 30,
+      speed: 6,
+      draw() {
+        // Arco
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size/2, 0, Math.PI * 2);
+        ctx.fillStyle = '#8B4513';
+        ctx.fill();
+        
+        // Cuerda del arco
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size/2 - 5, 0, Math.PI * 2);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    };
+    
+    // Flechas
+    const arrows = [];
+    class Arrow {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.speed = 12;
+        this.size = 15;
+      }
+      
+      update() {
+        this.y -= this.speed;
+      }
+      
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        
+        // Cuerpo de la flecha
+        ctx.fillStyle = '#555';
+        ctx.fillRect(-2, 0, 4, this.size);
+        
+        // Punta
+        ctx.beginPath();
+        ctx.moveTo(-4, 0);
+        ctx.lineTo(4, 0);
+        ctx.lineTo(0, -8);
+        ctx.closePath();
+        ctx.fillStyle = '#999';
+        ctx.fill();
+        
+        // Plumas
+        ctx.beginPath();
+        ctx.moveTo(-3, this.size - 5);
+        ctx.lineTo(3, this.size - 5);
+        ctx.lineTo(0, this.size);
+        ctx.closePath();
+        ctx.fillStyle = '#f55';
+        ctx.fill();
+        
+        ctx.restore();
+      }
+    }
+    
+    // Objetivos
+    const targets = [];
+    class Target {
+      constructor() {
+        this.size = 30 + Math.random() * 20;
+        this.x = Math.random() * (width - this.size);
+        this.y = Math.random() * (height / 2);
+        this.dx = (1 + Math.random() * 3) * (Math.random() > 0.5 ? 1 : -1);
+        this.color = `hsl(${Math.random() * 60 + 330}, 80%, 60%)`;
+        this.hit = false;
+      }
+      
+      update() {
+        if (this.hit) return;
+        
+        this.x += this.dx;
         
         // Rebotar en los bordes
-        if (t.x < 0 || t.x + t.size > width) {
-          t.dx *= -1;
+        if (this.x < 0 || this.x + this.size > width) {
+          this.dx *= -1;
         }
-
-        // Detectar colisiones con flechas
-        for (let j = arrows.length - 1; j >= 0; j--) {
-          const a = arrows[j];
-          if (a.x > t.x && a.x < t.x + t.size && 
-              a.y > t.y && a.y < t.y + t.size) {
-            arrows.splice(j, 1);
-            targets.splice(i, 1);
+      }
+      
+      draw() {
+        if (this.hit) return;
+        
+        ctx.save();
+        ctx.translate(this.x + this.size/2, this.y + this.size/2);
+        
+        // Círculo exterior
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size/2, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        
+        // Anillos concéntricos
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size/2.5, 0, Math.PI * 2);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size/4, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size/8, 0, Math.PI * 2);
+        ctx.fillStyle = 'gold';
+        ctx.fill();
+        
+        ctx.restore();
+      }
+    }
+    
+    // Inicializar juego
+    function initGame() {
+      resizeCanvas();
+      player.x = width / 2;
+      player.y = height - 100;
+      arrows.length = 0;
+      targets.length = 0;
+      score = 0;
+      arrowsLeft = 10;
+      gameActive = true;
+      
+      scoreElement.textContent = score;
+      arrowsElement.textContent = arrowsLeft;
+      gameOverPanel.style.display = 'none';
+      
+      // Crear objetivos iniciales
+      for (let i = 0; i < 5; i++) {
+        targets.push(new Target());
+      }
+    }
+    
+    // Redimensionar canvas
+    function resizeCanvas() {
+      width = window.innerWidth;
+      height = window.innerHeight - document.querySelector('.controls').offsetHeight;
+      canvas.width = width;
+      canvas.height = height;
+    }
+    
+    // Disparar flecha
+    function shoot() {
+      if (!gameActive || arrowsLeft <= 0) return;
+      
+      arrows.push(new Arrow(player.x, player.y - player.size/2));
+      arrowsLeft--;
+      arrowsElement.textContent = arrowsLeft;
+      sound.shoot();
+      
+      if (arrowsLeft === 0) {
+        setTimeout(endGame, 1000);
+      }
+    }
+    
+    // Finalizar juego
+    function endGame() {
+      gameActive = false;
+      finalScoreElement.textContent = score;
+      gameOverPanel.style.display = 'block';
+    }
+    
+    // Actualizar estado del juego
+    function update() {
+      if (!gameActive) return;
+      
+      // Mover flechas y detectar colisiones
+      for (let i = arrows.length - 1; i >= 0; i--) {
+        const arrow = arrows[i];
+        arrow.update();
+        
+        // Eliminar flechas fuera de pantalla
+        if (arrow.y + arrow.size < 0) {
+          arrows.splice(i, 1);
+          continue;
+        }
+        
+        // Detectar colisiones con objetivos
+        for (let j = targets.length - 1; j >= 0; j--) {
+          const target = targets[j];
+          
+          if (!target.hit && 
+              arrow.x > target.x && arrow.x < target.x + target.size &&
+              arrow.y > target.y && arrow.y < target.y + target.size) {
+            
+            target.hit = true;
+            arrows.splice(i, 1);
             score++;
-            scoreElement.textContent = `Objetivos: ${score}`;
-            hitSound.currentTime = 0;
-            hitSound.play().catch(e => console.log("Error al reproducir sonido:", e));
+            scoreElement.textContent = score;
+            sound.hit();
+            
+            // Eliminar objetivo después de un tiempo
+            setTimeout(() => {
+              const index = targets.indexOf(target);
+              if (index !== -1) targets.splice(index, 1);
+              
+              // Añadir nuevo objetivo
+              if (Math.random() > 0.5 || targets.length < 2) {
+                targets.push(new Target());
+              }
+            }, 300);
+            
             break;
           }
         }
       }
-
-      // Añadir nuevos objetivos si quedan pocos
-      if (targets.length < 2) {
-        createTargets(3);
-      }
+      
+      // Actualizar objetivos
+      targets.forEach(target => target.update());
     }
-
+    
+    // Dibujar el juego
+    function draw() {
+      // Limpiar canvas
+      ctx.clearRect(0, 0, width, height);
+      
+      // Dibujar fondo
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, '#4ab');
+      gradient.addColorStop(1, '#2a8');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      // Dibujar nubes de fondo
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      for (let i = 0; i < 5; i++) {
+        const x = (Date.now() / 3000 + i * 100) % (width + 200) - 100;
+        const y = height * 0.2 + Math.sin(i) * 30;
+        ctx.beginPath();
+        ctx.arc(x, y, 30, 0, Math.PI * 2);
+        ctx.arc(x + 25, y - 10, 25, 0, Math.PI * 2);
+        ctx.arc(x + 50, y, 20, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Dibujar objetivos
+      targets.forEach(target => target.draw());
+      
+      // Dibujar flechas
+      arrows.forEach(arrow => arrow.draw());
+      
+      // Dibujar jugador
+      player.draw();
+    }
+    
     // Bucle principal del juego
     function gameLoop() {
       update();
       draw();
       requestAnimationFrame(gameLoop);
     }
-    gameLoop();
-
-    // Ajustar tamaño al cambiar la ventana
-    window.addEventListener("resize", () => {
-      width = window.innerWidth;
-      height = window.innerHeight * 0.8;
-      canvas.width = width;
-      canvas.height = height;
+    
+    // Configurar controles
+    function setupControls() {
+      let moveX = 0;
+      let moveY = 0;
+      
+      const setMove = (x, y) => {
+        moveX = x;
+        moveY = y;
+      };
+      
+      // Controles táctiles
+      document.getElementById('up').addEventListener('touchstart', () => setMove(0, -1));
+      document.getElementById('down').addEventListener('touchstart', () => setMove(0, 1));
+      document.getElementById('left').addEventListener('touchstart', () => setMove(-1, 0));
+      document.getElementById('right').addEventListener('touchstart', () => setMove(1, 0));
+      document.getElementById('shoot').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        shoot();
+      });
+      
+      // Controles de teclado
+      document.addEventListener('keydown', (e) => {
+        switch(e.key) {
+          case 'ArrowUp': setMove(0, -1); break;
+          case 'ArrowDown': setMove(0, 1); break;
+          case 'ArrowLeft': setMove(-1, 0); break;
+          case 'ArrowRight': setMove(1, 0); break;
+          case ' ': shoot(); break;
+        }
+      });
+      
+      document.addEventListener('keyup', (e) => {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          setMove(0, 0);
+        }
+      });
+      
+      // Botón de disparo
+      document.getElementById('shoot').addEventListener('click', shoot);
+      
+      // Botón de reinicio
+      restartBtn.addEventListener('click', initGame);
+      
+      // Mover jugador continuamente
+      setInterval(() => {
+        if (!gameActive) return;
+        
+        player.x = Math.max(player.size/2, 
+          Math.min(width - player.size/2, player.x + moveX * player.speed));
+        player.y = Math.max(player.size/2, 
+          Math.min(height - player.size/2, player.y + moveY * player.speed));
+      }, 16);
+    }
+    
+    // Iniciar todo
+    window.addEventListener('load', () => {
+      initGame();
+      setupControls();
+      gameLoop();
+    });
+    
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      if (gameActive) {
+        player.x = Math.min(player.x, width - player.size/2);
+        player.y = Math.min(player.y, height - player.size/2);
+      }
     });
   </script>
 </body>
