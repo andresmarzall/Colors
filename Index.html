@@ -1,440 +1,755 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Airy Keys</title>
-  <style>
-    :root {
-      --bg-color: #f8f9fa;
-      --key-color: #ffffff;
-      --key-active: #4a8eff;
-      --key-border: #dee2e6;
-      --text-color: #212529;
-      --panel-bg: #2c3e50;
-      --highlight: #e74c3c;
-    }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    
-    body {
-      margin: 0;
-      background: var(--bg-color);
-      color: var(--text-color);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    
-    .header {
-      padding: 12px 10px;
-      text-align: center;
-      border-bottom: 1px solid var(--key-border);
-      background: white;
-    }
-    
-    .title {
-      font-size: 1.3rem;
-      margin: 0;
-      color: var(--text-color);
-      font-weight: 600;
-    }
-    
-    .subtitle {
-      font-size: 0.85rem;
-      color: #6c757d;
-      margin-top: 4px;
-    }
-    
-    .instructions {
-      font-size: 0.8rem;
-      text-align: center;
-      padding: 8px;
-      color: #6c757d;
-      background: #f1f3f5;
-      border-bottom: 1px solid var(--key-border);
-    }
-    
-    .synth-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 10px;
-      gap: 8px;
-      overflow: auto;
-    }
-    
-    .keyboard {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      margin-top: auto;
-    }
-    
-    .key {
-      background: var(--key-color);
-      border: 1px solid var(--key-border);
-      border-radius: 6px;
-      padding: 12px 5px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.05s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      aspect-ratio: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-height: 0;
-    }
-    
-    .key.active {
-      background: var(--key-active);
-      transform: scale(0.97);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-    
-    .key-label {
-      font-weight: bold;
-      font-size: 1rem;
-      margin-bottom: 2px;
-    }
-    
-    .key-note {
-      font-size: 0.75rem;
-      color: #6c757d;
-    }
-    
-    .active .key-note {
-      color: white;
-    }
-    
-    .controls {
-      background: var(--panel-bg);
-      border-radius: 8px;
-      padding: 12px;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-      margin-top: 10px;
-      color: white;
-    }
-    
-    .control-group {
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .control-label {
-      font-size: 0.8rem;
-      margin-bottom: 6px;
-      color: #adb5bd;
-    }
-    
-    select {
-      width: 100%;
-      padding: 8px;
-      border-radius: 5px;
-      border: 1px solid #495057;
-      background: #343a40;
-      color: white;
-      font-size: 0.9rem;
-    }
-    
-    @media (max-height: 600px) {
-      .key {
-        padding: 8px 3px;
-      }
-      
-      .key-label {
-        font-size: 0.9rem;
-      }
-      
-      .key-note {
-        font-size: 0.7rem;
-      }
-      
-      .controls {
-        padding: 8px;
-      }
-    }
-    
-    @media (max-width: 350px) {
-      .key-label {
-        font-size: 0.85rem;
-      }
-      
-      .key-note {
-        font-size: 0.65rem;
-      }
-      
-      select {
-        padding: 6px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1 class="title">Airy Keys</h1>
-    <div class="subtitle">< Oct 3 > Do</div>
-  </div>
-  
-  <div class="instructions">Usa las teclas A, S, D, F, G, H, J, K, L</div>
-  
-  <div class="synth-container">
-    <div class="keyboard">
-      <div class="key" data-note="C4" id="key-c4">
-        <div class="key-label">C4</div>
-        <div class="key-note">Do</div>
-      </div>
-      <div class="key" data-note="D4" id="key-d4">
-        <div class="key-label">D4</div>
-        <div class="key-note">Re</div>
-      </div>
-      <div class="key" data-note="E4" id="key-e4">
-        <div class="key-label">E4</div>
-        <div class="key-note">Mi</div>
-      </div>
-      
-      <div class="key" data-note="F4" id="key-f4">
-        <div class="key-label">F4</div>
-        <div class="key-note">Fa</div>
-      </div>
-      <div class="key" data-note="G4" id="key-g4">
-        <div class="key-label">G4</div>
-        <div class="key-note">Sol</div>
-      </div>
-      <div class="key" data-note="A4" id="key-a4">
-        <div class="key-label">A4</div>
-        <div class="key-note">La</div>
-      </div>
-      
-      <div class="key" data-note="B4" id="key-b4">
-        <div class="key-label">B4</div>
-        <div class="key-note">Si</div>
-      </div>
-      <div class="key" data-note="C5" id="key-c5">
-        <div class="key-label">C5</div>
-        <div class="key-note">Do</div>
-      </div>
-      <div class="key" data-note="Fx" id="key-fx">
-        <div class="key-label">Fx</div>
-        <div class="key-note">Ninguno</div>
-      </div>
-    </div>
-    
-    <div class="controls">
-      <div class="control-group">
-        <div class="control-label">INSTRUMENTO</div>
-        <select id="instrument-select">
-          <option value="sine">Sine</option>
-          <option value="square">Square</option>
-          <option value="sawtooth">Sawtooth</option>
-          <option value="triangle">Triangle</option>
-        </select>
-      </div>
-      
-      <div class="control-group">
-        <div class="control-label">OCTAVA</div>
-        <select id="octave-select">
-          <option value="3">Oct 3</option>
-          <option value="4" selected>Oct 4</option>
-          <option value="5">Oct 5</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    class AirySynth {
-      constructor() {
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        this.oscillators = {};
-        this.currentWaveform = 'sine';
-        this.octave = 4;
-        
-        // Precargar sonidos para eliminar delay
-        this.preloadSounds();
-        this.initControls();
-        this.initKeyboard();
-        this.initKeyBindings();
-      }
-      
-      preloadSounds() {
-        // Crear y liberar inmediatamente osciladores para precache
-        const notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-        notes.forEach(note => {
-          const osc = this.audioContext.createOscillator();
-          const gain = this.audioContext.createGain();
-          osc.type = this.currentWaveform;
-          osc.frequency.value = this.getNoteFrequency(`${note}4`);
-          gain.gain.value = 0;
-          osc.connect(gain);
-          gain.connect(this.audioContext.destination);
-          osc.start();
-          osc.stop(this.audioContext.currentTime + 0.001);
-        });
-      }
-      
-      initControls() {
-        document.getElementById('instrument-select').addEventListener('change', (e) => {
-          this.currentWaveform = e.target.value;
-        });
-        
-        document.getElementById('octave-select').addEventListener('change', (e) => {
-          this.octave = parseInt(e.target.value);
-        });
-      }
-      
-      initKeyboard() {
-        const keys = document.querySelectorAll('.key');
-        
-        keys.forEach(key => {
-          // Touch events
-          key.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            this.handleKeyPress(key);
-          }, { passive: false });
-          
-          key.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            this.handleKeyRelease(key);
-          }, { passive: false });
-          
-          // Mouse events
-          key.addEventListener('mousedown', () => {
-            this.handleKeyPress(key);
-          });
-          
-          key.addEventListener('mouseup', () => {
-            this.handleKeyRelease(key);
-          });
-          
-          key.addEventListener('mouseleave', () => {
-            if (key.classList.contains('active')) {
-              this.handleKeyRelease(key);
-            }
-          });
-        });
-      }
-      
-      initKeyBindings() {
-        document.addEventListener('keydown', (e) => {
-          const keyMap = {
-            'a': 'C4', 's': 'D4', 'd': 'E4',
-            'f': 'F4', 'g': 'G4', 'h': 'A4',
-            'j': 'B4', 'k': 'C5', 'l': 'Fx'
-          };
-          
-          const note = keyMap[e.key.toLowerCase()];
-          if (note) {
-            const keyElement = document.getElementById(`key-${note.toLowerCase()}`);
-            if (keyElement && !keyElement.classList.contains('active')) {
-              this.handleKeyPress(keyElement);
-            }
-          }
-        });
-        
-        document.addEventListener('keyup', (e) => {
-          const keyMap = {
-            'a': 'C4', 's': 'D4', 'd': 'E4',
-            'f': 'F4', 'g': 'G4', 'h': 'A4',
-            'j': 'B4', 'k': 'C5', 'l': 'Fx'
-          };
-          
-          const note = keyMap[e.key.toLowerCase()];
-          if (note) {
-            const keyElement = document.getElementById(`key-${note.toLowerCase()}`);
-            if (keyElement && keyElement.classList.contains('active')) {
-              this.handleKeyRelease(keyElement);
-            }
-          }
-        });
-      }
-      
-      handleKeyPress(key) {
-        if (key.dataset.note === 'Fx') return;
-        
-        key.classList.add('active');
-        this.playNote(key.dataset.note);
-      }
-      
-      handleKeyRelease(key) {
-        key.classList.remove('active');
-        if (key.dataset.note !== 'Fx') {
-          this.stopNote(key.dataset.note);
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LlamApp - Chat en Tiempo Real</title>
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .chat-container {
+            height: calc(100vh - 150px);
         }
-      }
-      
-      playNote(note) {
-        if (this.oscillators[note]) return;
-        
-        const freq = this.getNoteFrequency(note);
-        
-        const osc = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-        
-        osc.type = this.currentWaveform;
-        osc.frequency.value = freq;
-        
-        // Configuración para respuesta instantánea
-        gainNode.gain.value = 0;
-        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.5, this.audioContext.currentTime + 0.01);
-        
-        osc.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-        
-        osc.start();
-        this.oscillators[note] = { osc, gainNode };
-      }
-      
-      stopNote(note) {
-        if (!this.oscillators[note]) return;
-        
-        const { osc, gainNode } = this.oscillators[note];
-        
-        // Liberación rápida pero suave
-        gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
-        gainNode.gain.setValueAtTime(gainNode.gain.value, this.audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.03);
-        
-        setTimeout(() => {
-          osc.stop();
-          osc.disconnect();
-          gainNode.disconnect();
-          delete this.oscillators[note];
-        }, 30);
-      }
-      
-      getNoteFrequency(note) {
-        const notes = {
-          'C3': 130.81, 'D3': 146.83, 'E3': 164.81,
-          'F3': 174.61, 'G3': 196.00, 'A3': 220.00,
-          'B3': 246.94,
-          'C4': 261.63, 'D4': 293.66, 'E4': 329.63,
-          'F4': 349.23, 'G4': 392.00, 'A4': 440.00,
-          'B4': 493.88,
-          'C5': 523.25, 'D5': 587.33, 'E5': 659.25,
-          'F5': 698.46, 'G5': 783.99, 'A5': 880.00,
-          'B5': 987.77
-        };
-        return notes[note] || 440;
-      }
-    }
+        .messages-container {
+            overflow-y: auto;
+            height: calc(100% - 60px);
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .message-card {
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .search-results {
+            position: absolute;
+            width: 100%;
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .online-badge {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="bi bi-chat-dots-fill"></i> LlamApp
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" id="navHome">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="navContacts">Contactos</a>
+                    </li>
+                </ul>
+                <div id="authButtons" class="d-flex"></div>
+            </div>
+        </div>
+    </nav>
 
-    // Inicializar el sintetizador al cargar
-    window.addEventListener('load', () => {
-      new AirySynth();
-    });
-  </script>
+    <!-- Main Content -->
+    <div class="container-fluid mt-3">
+        <!-- Login View -->
+        <div id="loginView" class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow">
+                    <div class="card-body text-center p-5">
+                        <h2 class="mb-4">Bienvenido a LlamApp</h2>
+                        <p class="text-muted mb-4">Conéctate con tus amigos en tiempo real</p>
+                        <button id="btnLoginGoogle" class="btn btn-danger btn-lg w-100">
+                            <i class="bi bi-google"></i> Continuar con Google
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboardView" class="d-none">
+            <div class="row">
+                <!-- Sidebar -->
+                <div class="col-md-4 col-lg-3 mb-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white">
+                            <div class="d-flex align-items-center">
+                                <img id="currentUserAvatar" src="" alt="Avatar" class="user-avatar me-2">
+                                <div>
+                                    <h6 class="mb-0" id="currentUserName"></h6>
+                                    <small class="text-muted" id="currentUserEmail"></small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <!-- Search Bar -->
+                            <div class="p-3 border-bottom">
+                                <div class="input-group">
+                                    <input type="text" id="userSearch" class="form-control" placeholder="Buscar usuarios...">
+                                    <button class="btn btn-outline-secondary" type="button">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                                <div id="searchResults" class="search-results card d-none"></div>
+                            </div>
+                            
+                            <!-- Contacts List -->
+                            <div id="contactsList" class="list-group list-group-flush">
+                                <div class="list-group-item text-center py-4">
+                                    <i class="bi bi-people fs-1 text-muted"></i>
+                                    <p class="text-muted mt-2">Tus contactos aparecerán aquí</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+<!-- Chat Area -->
+                <div class="col-md-8 col-lg-9">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <div id="chatHeaderInfo">
+                                <h5 class="mb-0">Selecciona un chat</h5>
+                            </div>
+                            <div id="chatHeaderActions" class="d-none">
+                                <button class="btn btn-sm btn-outline-danger" id="btnClearChat">
+                                    <i class="bi bi-trash"></i> Limpiar chat
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="emptyChat" class="d-flex flex-column align-items-center justify-content-center h-100">
+                                <i class="bi bi-chat-left-text fs-1 text-muted"></i>
+                                <h4 class="mt-3 text-muted">Selecciona una conversación</h4>
+                                <p class="text-muted">O busca nuevos contactos para chatear</p>
+                            </div>
+                            <div id="activeChat" class="d-none h-100">
+                                <div class="chat-container d-flex flex-column p-3">
+                                    <div class="messages-container mb-3" id="messagesContainer"></div>
+                                    <div class="mt-auto">
+                                        <div class="input-group">
+                                            <input type="text" id="messageInput" class="form-control" placeholder="Escribe un mensaje...">
+                                            <button class="btn btn-primary" id="btnSendMessage">
+                                                <i class="bi bi-send-fill"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- Firebase SDK -->
+    <script type="module">
+        // Firebase Configuration and Initialization
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { 
+            getAuth, 
+            GoogleAuthProvider, 
+            signInWithPopup, 
+            signOut, 
+            onAuthStateChanged,
+            getIdToken
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { 
+            getDatabase, 
+            ref, 
+            push, 
+            onValue, 
+            off, 
+            set, 
+            query, 
+            orderByChild, 
+            equalTo,
+            startAt,
+            endAt,
+            remove,
+            onChildAdded,
+            onChildRemoved,
+            update,
+            onDisconnect
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
+            authDomain: "llamapp-c8d6c.firebaseapp.com",
+            databaseURL: "https://llamapp-c8d6c-default-rtdb.firebaseio.com",
+            projectId: "llamapp-c8d6c",
+            storageBucket: "llamapp-c8d6c.appspot.com",
+            messagingSenderId: "132119278171",
+            appId: "1:132119278171:web:d11d942c8dc2f4ed9a057e",
+            measurementId: "G-4VN80ZMS5L"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+        const provider = new GoogleAuthProvider();
+
+        // DOM Elements
+        const authButtonsDiv = document.getElementById('authButtons');
+        const loginView = document.getElementById('loginView');
+        const dashboardView = document.getElementById('dashboardView');
+        const btnLoginGoogle = document.getElementById('btnLoginGoogle');
+        const currentUserName = document.getElementById('currentUserName');
+        const currentUserEmail = document.getElementById('currentUserEmail');
+        const currentUserAvatar = document.getElementById('currentUserAvatar');
+        const userSearch = document.getElementById('userSearch');
+        const searchResults = document.getElementById('searchResults');
+        const contactsList = document.getElementById('contactsList');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const messageInput = document.getElementById('messageInput');
+        const btnSendMessage = document.getElementById('btnSendMessage');
+        const emptyChat = document.getElementById('emptyChat');
+        const activeChat = document.getElementById('activeChat');
+        const chatHeaderInfo = document.getElementById('chatHeaderInfo');
+        const chatHeaderActions = document.getElementById('chatHeaderActions');
+        const btnClearChat = document.getElementById('btnClearChat');
+
+        // App State
+        let currentUser = null;
+        let currentChat = null;
+        let usersRef, contactsRef, messagesRef, presenceRef;
+
+        // Initialize the app
+        function initApp() {
+            renderAuthButtons();
+            setupEventListeners();
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Login button
+            if (btnLoginGoogle) {
+                btnLoginGoogle.addEventListener('click', loginWithGoogle);
+            }
+
+            // Send message
+            btnSendMessage.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // User search
+            userSearch.addEventListener('input', searchUsers);
+
+            // Clear chat
+            btnClearChat.addEventListener('click', clearChat);
+        }
+
+        // Auth functions
+        async function loginWithGoogle() {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                currentUser = result.user;
+                initUserData();
+            } catch (error) {
+                showAlert('Error al iniciar sesión: ' + error.message, 'danger');
+            }
+        }
+
+        async function logoutUser() {
+            try {
+                // Update presence status before logging out
+                if (currentUser) {
+                    await set(ref(database, `presence/${currentUser.uid}`), {
+                        status: 'offline',
+                        lastChanged: new Date().toISOString()
+                    });
+                }
+                
+                await signOut(auth);
+                currentUser = null;
+                currentChat = null;
+                
+                // Clean up listeners
+                if (usersRef) off(usersRef);
+                if (contactsRef) off(contactsRef);
+                if (messagesRef) off(messagesRef);
+                if (presenceRef) off(presenceRef);
+                
+                showView('login');
+                renderAuthButtons();
+            } catch (error) {
+                showAlert('Error al cerrar sesión: ' + error.message, 'danger');
+            }
+        }
+
+        // Render auth buttons
+        function renderAuthButtons() {
+            if (currentUser) {
+                authButtonsDiv.innerHTML = `
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown">
+                            <img src="${currentUser.photoURL || 'https://via.placeholder.com/40'}" alt="Avatar" class="user-avatar me-2">
+                            ${currentUser.displayName || currentUser.email}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><button class="dropdown-item" id="btnLogout">Cerrar sesión</button></li>
+                        </ul>
+                    </div>
+                `;
+document.getElementById('btnLogout').addEventListener('click', logoutUser);
+            } else {
+                authButtonsDiv.innerHTML = `
+                    <button id="btnLoginHeader" class="btn btn-outline-light">
+                        <i class="bi bi-google"></i> Iniciar sesión
+                    </button>
+                `;
+                
+                document.getElementById('btnLoginHeader').addEventListener('click', loginWithGoogle);
+            }
+        }
+
+        // Show view based on auth state
+        function showView(view) {
+            if (view === 'login') {
+                loginView.classList.remove('d-none');
+                dashboardView.classList.add('d-none');
+            } else {
+                loginView.classList.add('d-none');
+                dashboardView.classList.remove('d-none');
+            }
+        }
+
+        // Initialize user data after login
+        function initUserData() {
+            // Update UI
+            currentUserName.textContent = currentUser.displayName || currentUser.email.split('@')[0];
+            currentUserEmail.textContent = currentUser.email;
+            currentUserAvatar.src = currentUser.photoURL || 'https://via.placeholder.com/40';
+            
+            // Show dashboard
+            showView('dashboard');
+            renderAuthButtons();
+            
+            // Initialize Firebase references
+            usersRef = ref(database, 'users');
+            contactsRef = ref(database, `userContacts/${currentUser.uid}`);
+            messagesRef = ref(database, 'messages');
+            presenceRef = ref(database, 'presence');
+            
+            // Save user data to database
+            set(ref(database, `users/${currentUser.uid}`), {
+                uid: currentUser.uid,
+                displayName: currentUser.displayName,
+                email: currentUser.email,
+                photoURL: currentUser.photoURL || 'https://via.placeholder.com/40',
+                createdAt: new Date().toISOString()
+            });
+            
+            // Set presence status
+            const userPresenceRef = ref(database, `presence/${currentUser.uid}`);
+            set(userPresenceRef, {
+                status: 'online',
+                lastChanged: new Date().toISOString()
+            });
+            
+            // Handle disconnect
+            onDisconnect(userPresenceRef).set({
+                status: 'offline',
+                lastChanged: new Date().toISOString()
+            });
+            
+            // Load contacts
+            loadContacts();
+            
+            // Listen for new contacts
+            onChildAdded(contactsRef, (snapshot) => {
+                const contactId = snapshot.key;
+                getUserData(contactId, (user) => {
+                    if (user) {
+                        addContactToUI(user);
+                    }
+                });
+            });
+            
+            // Listen for removed contacts
+            onChildRemoved(contactsRef, (snapshot) => {
+                const contactId = snapshot.key;
+                const contactElement = document.getElementById(`contact-${contactId}`);
+                if (contactElement) {
+                    contactElement.remove();
+                }
+            });
+        }
+
+        // Load user contacts
+        function loadContacts() {
+            onValue(contactsRef, (snapshot) => {
+                contactsList.innerHTML = '';
+                
+                if (snapshot.exists()) {
+                    const contacts = snapshot.val();
+                    Object.keys(contacts).forEach(contactId => {
+                        getUserData(contactId, (user) => {
+                            if (user) {
+                                addContactToUI(user);
+                            }
+                        });
+                    });
+                } else {
+                    contactsList.innerHTML = `
+                        <div class="list-group-item text-center py-4">
+                            <i class="bi bi-people fs-1 text-muted"></i>
+                            <p class="text-muted mt-2">No tienes contactos aún</p>
+                            <p class="text-muted">Busca usuarios para agregarlos</p>
+                        </div>
+                    `;
+                }
+            });
+        }
+ // Add contact to UI
+        function addContactToUI(user) {
+            // Check if contact already exists in UI
+            if (document.getElementById(`contact-${user.uid}`)) return;
+            
+            // Get presence status
+            getPresenceStatus(user.uid, (status) => {
+                const contactElement = document.createElement('div');
+                contactElement.id = `contact-${user.uid}`;
+                contactElement.className = 'list-group-item list-group-item-action';
+                contactElement.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <img src="${user.photoURL}" alt="${user.displayName}" class="user-avatar me-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">${user.displayName}</h6>
+                                <small class="text-muted">${status === 'online' ? 
+                                    '<span class="online-badge bg-success"></span>En línea' : 
+                                    '<span class="online-badge bg-secondary"></span>Desconectado'}</small>
+                            </div>
+                            <small class="text-muted">${user.email}</small>
+                        </div>
+                    </div>
+                `;
+                
+                contactElement.addEventListener('click', () => {
+                    openChat(user);
+                });
+                
+                contactsList.prepend(contactElement);
+            });
+        }
+
+        // Search users
+        function searchUsers() {
+            const searchTerm = userSearch.value.trim().toLowerCase();
+            
+            if (searchTerm.length < 2) {
+                searchResults.classList.add('d-none');
+                return;
+            }
+            
+            const usersQuery = query(
+                ref(database, 'users'),
+                orderByChild('displayName'),
+                startAt(searchTerm),
+                endAt(searchTerm + '\uf8ff')
+            );
+            
+            onValue(usersQuery, (snapshot) => {
+                searchResults.innerHTML = '';
+                searchResults.classList.remove('d-none');
+                
+                if (snapshot.exists()) {
+                    snapshot.forEach((childSnapshot) => {
+                        const user = childSnapshot.val();
+                        
+                        // Don't show current user in results
+                        if (user.uid === currentUser.uid) return;
+                        
+                        // Check if user is already a contact
+                        getContactStatus(user.uid, (isContact) => {
+                            const userElement = document.createElement('div');
+                            userElement.className = 'list-group-item list-group-item-action';
+                            userElement.innerHTML = `
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <img src="${user.photoURL}" alt="${user.displayName}" class="user-avatar me-3">
+                                        <div>
+                                            <h6 class="mb-0">${user.displayName}</h6>
+                                            <small class="text-muted">${user.email}</small>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-sm ${isContact ? 'btn-outline-secondary disabled' : 'btn-primary'}" 
+                                            data-user-id="${user.uid}">
+                                        ${isContact ? 'Agregado' : 'Agregar'}
+                                    </button>
+                                </div>
+                            `;
+                            
+                            if (!isContact) {
+                                userElement.querySelector('button').addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    addContact(user.uid);
+                                });
+                            }
+                            
+                            userElement.addEventListener('click', () => {
+                                openChat(user);
+                                searchResults.classList.add('d-none');
+                                userSearch.value = '';
+                            });
+                            
+                            searchResults.appendChild(userElement);
+                        });
+                    });
+                } else {
+                    searchResults.innerHTML = `
+                        <div class="list-group-item text-center py-3">
+                            No se encontraron usuarios
+                        </div>
+                    `;
+                }
+            }, { onlyOnce: true });
+        }
+
+        // Add contact
+        function addContact(contactId) {
+            set(ref(database, `userContacts/${currentUser.uid}/${contactId}`), true);
+            set(ref(database, `userContacts/${contactId}/${currentUser.uid}`), true);
+            
+            showAlert('Contacto agregado correctamente', 'success');
+        }
+
+        // Get contact status
+        function getContactStatus(contactId, callback) {
+            onValue(ref(database, `userContacts/${currentUser.uid}/${contactId}`), (snapshot) => {
+                callback(snapshot.exists());
+            }, { onlyOnce: true });
+        }
+// Get user data
+        function getUserData(userId, callback) {
+            onValue(ref(database, `users/${userId}`), (snapshot) => {
+                callback(snapshot.exists() ? snapshot.val() : null);
+            }, { onlyOnce: true });
+        }
+
+        // Get presence status
+        function getPresenceStatus(userId, callback) {
+            onValue(ref(database, `presence/${userId}/status`), (snapshot) => {
+                callback(snapshot.exists() ? snapshot.val() : 'offline');
+            });
+        }
+
+        // Open chat with user
+        function openChat(user) {
+            currentChat = user;
+            
+            // Update UI
+            chatHeaderInfo.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <img src="${user.photoURL}" alt="${user.displayName}" class="user-avatar me-2">
+                    <div>
+                        <h5 class="mb-0">${user.displayName}</h5>
+                        <small class="text-muted" id="chatStatus">Cargando estado...</small>
+                    </div>
+                </div>
+            `;
+            
+            chatHeaderActions.classList.remove('d-none');
+            emptyChat.classList.add('d-none');
+            activeChat.classList.remove('d-none');
+            messageInput.focus();
+            
+            // Update presence status in real-time
+            onValue(ref(database, `presence/${user.uid}/status`), (snapshot) => {
+                const statusElement = document.getElementById('chatStatus');
+                if (statusElement) {
+                    statusElement.innerHTML = snapshot.exists() ? 
+                        (snapshot.val() === 'online' ? 
+                            '<span class="online-badge bg-success"></span>En línea' : 
+                            '<span class="online-badge bg-secondary"></span>Desconectado') : 
+                        '<span class="online-badge bg-secondary"></span>Desconectado';
+                }
+            });
+            
+            // Load messages
+            loadMessages();
+        }
+
+        // Load messages for current chat
+        function loadMessages() {
+            // Clear previous listener
+            if (messagesRef) off(messagesRef);
+            
+            messagesContainer.innerHTML = '<div class="text-center py-4 text-muted">Cargando mensajes...</div>';
+            
+            // Query messages between current user and chat user
+            const chatId = [currentUser.uid, currentChat.uid].sort().join('_');
+            messagesRef = ref(database, `messages/${chatId}`);
+            
+            onValue(messagesRef, (snapshot) => {
+                messagesContainer.innerHTML = '';
+                
+                if (snapshot.exists()) {
+                    const messages = [];
+                    
+                    snapshot.forEach((childSnapshot) => {
+                        messages.push({
+                            id: childSnapshot.key,
+                            ...childSnapshot.val()
+                        });
+                    });
+                    
+                    // Sort messages by timestamp
+                    messages.sort((a, b) => a.timestamp - b.timestamp);
+                    
+                    // Display messages
+                    messages.forEach(message => {
+                        displayMessage(message);
+                    });
+                    
+                    // Scroll to bottom
+                    setTimeout(() => {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }, 100);
+                } else {
+                    messagesContainer.innerHTML = `
+                        <div class="text-center py-4 text-muted">
+                            No hay mensajes aún. ¡Envía el primero!
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        // Display a message in the chat
+        function displayMessage(message) {
+            const isCurrentUser = message.senderId === currentUser.uid;
+            const messageElement = document.createElement('div');
+            
+            messageElement.className = `d-flex mb-3 ${isCurrentUser ? 'justify-content-end' : 'justify-content-start'}`;
+            messageElement.innerHTML = `
+                <div class="message-card card ${isCurrentUser ? 'bg-primary text-white' : 'bg-white'}">
+                    <div class="card-body p-2">
+                        ${!isCurrentUser ? `
+                            <small class="text-${isCurrentUser ? 'white-50' : 'muted'}">
+                                ${currentChat.displayName}
+                            </small>
+                            <br>
+                        ` : ''}
+                        <p class="mb-0">${message.text}</p>
+                        <small class="text-${isCurrentUser ? 'white-50' : 'muted'} float-end">
+                            ${new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </small>
+                    </div>
+                </div>
+            `;
+messagesContainer.appendChild(messageElement);
+        }
+
+        // Send message
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            
+            if (!text || !currentChat) return;
+            
+            // Generate chat ID (combination of both user IDs sorted)
+            const chatId = [currentUser.uid, currentChat.uid].sort().join('_');
+            
+            // Create message object
+            const message = {
+                senderId: currentUser.uid,
+                receiverId: currentChat.uid,
+                text: text,
+                timestamp: Date.now()
+            };
+            
+            // Push message to database
+            push(ref(database, `messages/${chatId}`), message)
+                .then(() => {
+                    messageInput.value = '';
+                    
+                    // Scroll to bottom
+                    setTimeout(() => {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }, 100);
+                })
+                .catch(error => {
+                    showAlert('Error al enviar mensaje: ' + error.message, 'danger');
+                });
+        }
+
+        // Clear chat
+        function clearChat() {
+            if (!currentChat || !confirm('¿Estás seguro de que quieres borrar este chat? Esta acción no se puede deshacer.')) {
+                return;
+            }
+            
+            const chatId = [currentUser.uid, currentChat.uid].sort().join('_');
+            remove(ref(database, `messages/${chatId}`))
+                .then(() => {
+                    showAlert('Chat borrado correctamente', 'success');
+                })
+                .catch(error => {
+                    showAlert('Error al borrar chat: ' + error.message, 'danger');
+                });
+        }
+
+        // Show alert
+        function showAlert(message, type) {
+            const alertElement = document.createElement('div');
+            alertElement.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+            alertElement.setAttribute('role', 'alert');
+            alertElement.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alertElement);
+            
+            // Auto dismiss after 5 seconds
+            setTimeout(() => {
+                alertElement.classList.remove('show');
+                setTimeout(() => {
+                    alertElement.remove();
+                }, 150);
+            }, 5000);
+        }
+
+        // Auth state listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                initUserData();
+            } else {
+                currentUser = null;
+                showView('login');
+                renderAuthButtons();
+            }
+        });
+
+        // Initialize the app
+        initApp();
+    </script>
+
+    <!-- Bootstrap 5.3 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
