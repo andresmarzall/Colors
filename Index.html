@@ -2,47 +2,80 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>App de Llamadas 1 a 1</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat 1 a 1 - Firebase + Voz</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    audio { display: none; }
+  </style>
 </head>
 <body class="bg-light">
   <div class="container py-4">
-    <div id="loginView" class="text-center">
-      <h2>App de Llamadas</h2>
-      <button id="btnLogin" class="btn btn-danger mt-3">
-        <i class="bi bi-google"></i> Iniciar sesión con Google
-      </button>
+    <div id="alertContainer"></div>
+
+    <!-- Login View -->
+    <div id="loginView" class="row justify-content-center">
+      <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+          <div class="card-body text-center p-5">
+            <h2 class="mb-4">Chat App</h2>
+            <p class="text-muted mb-4">Ingresa con Google</p>
+            <button id="btnLoginGoogle" class="btn btn-danger btn-lg w-100">
+              <i class="bi bi-google"></i> Continuar con Google
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div id="appView" class="d-none">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4>Usuarios conectados</h4>
-        <button id="btnLogout" class="btn btn-outline-danger btn-sm">Salir</button>
+    <!-- Dashboard View -->
+    <div id="dashboardView" class="d-none">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-chat-dots"></i> Usuarios</h2>
+        <div>
+          <img id="userAvatar" src="" class="rounded-circle me-2" width="40" height="40">
+          <button id="btnLogout" class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
+        </div>
       </div>
       <ul id="usersList" class="list-group mb-4"></ul>
-      <button id="btnHangup" class="btn btn-danger d-none"><i class="bi bi-telephone-x-fill"></i> Colgar</button>
     </div>
-  </div>
 
-  <!-- Modal llamada entrante -->
-  <div class="modal fade" id="incomingCallModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content p-3">
-        <h5>¡Llamada entrante!</h5>
-        <p id="callerId" class="text-muted"></p>
-        <button id="btnAcceptCall" class="btn btn-success me-2">Aceptar</button>
-        <button id="btnRejectCall" class="btn btn-danger">Rechazar</button>
+    <!-- Chat Modal -->
+    <div class="modal fade" id="chatModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div>
+              <h5 id="chatModalLabel" class="modal-title mb-0">Chat</h5>
+              <small id="typingStatus" class="text-muted"></small>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div id="chatHistory" class="mb-3" style="max-height: 300px; overflow-y: auto;"></div>
+            <form id="chatForm" class="d-flex">
+              <input id="chatInput" class="form-control me-2" placeholder="Escribe un mensaje..." autocomplete="off" />
+              <button class="btn btn-primary" type="submit">Enviar</button>
+            </form>
+            <div class="d-flex justify-content-end mt-3">
+              <button id="btnCall" class="btn btn-success me-2"><i class="bi bi-telephone-fill"></i> Llamar</button>
+              <button id="btnHangup" class="btn btn-danger d-none"><i class="bi bi-telephone-x-fill"></i> Colgar</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- Audio Element -->
+    <audio id="remoteAudio" autoplay></audio>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getDatabase, ref, set, onValue, remove, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, set, push, onValue, onDisconnect, remove, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
@@ -51,175 +84,211 @@
       projectId: "llamapp-c8d6c",
       storageBucket: "llamapp-c8d6c.appspot.com",
       messagingSenderId: "132119278171",
-      appId: "1:132119278171:web:d11d942c8dc2f4ed9a057e"
+      appId: "1:132119278171:web:d11d942c8dc2f4ed9a057e",
+      measurementId: "G-4VN80ZMS5L"
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth();
-    const db = getDatabase();
+    const analytics = getAnalytics(app);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
     const provider = new GoogleAuthProvider();
 
-    // DOM
-    const btnLogin = document.getElementById("btnLogin");
-    const btnLogout = document.getElementById("btnLogout");
-    const loginView = document.getElementById("loginView");
-    const appView = document.getElementById("appView");
-    const usersList = document.getElementById("usersList");
-    const btnHangup = document.getElementById("btnHangup");
+    const loginView = document.getElementById('loginView');
+    const dashboardView = document.getElementById('dashboardView');
+    const btnLoginGoogle = document.getElementById('btnLoginGoogle');
+    const btnLogout = document.getElementById('btnLogout');
+    const userAvatar = document.getElementById('userAvatar');
+    const usersList = document.getElementById('usersList');
+    const chatModal = new bootstrap.Modal(document.getElementById('chatModal'));
+    const chatModalLabel = document.getElementById('chatModalLabel');
+    const chatHistory = document.getElementById('chatHistory');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const typingStatus = document.getElementById('typingStatus');
+    const btnCall = document.getElementById('btnCall');
+    const btnHangup = document.getElementById('btnHangup');
+    const remoteAudio = document.getElementById('remoteAudio');
 
-    const incomingModal = new bootstrap.Modal(document.getElementById('incomingCallModal'));
-    const btnAcceptCall = document.getElementById("btnAcceptCall");
-    const btnRejectCall = document.getElementById("btnRejectCall");
-    const callerIdText = document.getElementById("callerId");
-
-    let localStream, peer, currentUser;
+    let currentUser = null;
+    let chatPartner = null;
+    let chatRef = null;
+    let typingRef = null;
+    let partnerTypingRef = null;
+    let peerConnection = null;
+    let localStream = null;
 
     const servers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-    // Login
-    btnLogin.onclick = async () => {
-      await signInWithPopup(auth, provider);
+    btnLoginGoogle.onclick = async () => {
+      try { await signInWithPopup(auth, provider); }
+      catch (e) { showError("Error de login: " + e.message); }
     };
 
-    // Logout
     btnLogout.onclick = async () => {
-      if (currentUser) {
-        await remove(ref(db, `users/${currentUser.uid}`));
-      }
+      if (chatRef) off(chatRef);
+      if (partnerTypingRef) off(partnerTypingRef);
       await signOut(auth);
     };
 
-    // Estado de sesión
     onAuthStateChanged(auth, user => {
       if (user) {
         currentUser = user;
-        loginView.classList.add("d-none");
-        appView.classList.remove("d-none");
-        set(ref(db, `users/${user.uid}`), {
-          name: user.displayName,
-          uid: user.uid
-        });
-        listenUsers();
+        loginView.classList.add('d-none');
+        dashboardView.classList.remove('d-none');
+        userAvatar.src = user.photoURL;
+        const userRef = ref(db, 'presence/' + user.uid);
+        set(userRef, { name: user.displayName, photo: user.photoURL });
+        onDisconnect(userRef).remove();
+        loadUsers();
         listenForCalls();
       } else {
-        loginView.classList.remove("d-none");
-        appView.classList.add("d-none");
+        currentUser = null;
+        loginView.classList.remove('d-none');
+        dashboardView.classList.add('d-none');
       }
     });
 
-    // Lista de usuarios
-    function listenUsers() {
-      onValue(ref(db, 'users'), snap => {
+    function loadUsers() {
+      onValue(ref(db, 'presence'), snap => {
         usersList.innerHTML = '';
-        snap.forEach(child => {
-          const user = child.val();
-          if (user.uid === currentUser.uid) return;
+        snap.forEach(u => {
+          const uid = u.key;
+          if (uid === currentUser.uid) return;
+          const data = u.val();
           const li = document.createElement('li');
-          li.className = 'list-group-item d-flex justify-content-between align-items-center';
-          li.textContent = user.name;
-          const btnCall = document.createElement('button');
-          btnCall.className = 'btn btn-success btn-sm';
-          btnCall.innerHTML = '<i class="bi bi-telephone-fill"></i>';
-          btnCall.onclick = () => startCall(user.uid);
-          li.appendChild(btnCall);
+          li.className = 'list-group-item list-group-item-action d-flex align-items-center';
+          li.innerHTML = `<img src="${data.photo}" class="rounded-circle me-3" width="30" height="30"> <span>${data.name}</span>`;
+          li.onclick = () => openChat(uid, data.name);
           usersList.appendChild(li);
         });
       });
     }
 
-    // Iniciar llamada
-    async function startCall(toUID) {
-      peer = new RTCPeerConnection(servers);
-      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+    function openChat(partnerUid, partnerName) {
+      chatPartner = partnerUid;
+      chatModalLabel.textContent = "Chat con " + partnerName;
+      chatHistory.innerHTML = '';
+      typingStatus.textContent = '';
 
-      peer.onicecandidate = e => {
-        if (e.candidate) {
-          push(ref(db, `calls/${toUID}/candidates`), e.candidate.toJSON());
-        }
-      };
+      if (chatRef) off(chatRef);
+      if (partnerTypingRef) off(partnerTypingRef);
 
-      peer.ontrack = e => {
-        const audio = new Audio();
-        audio.srcObject = e.streams[0];
-        audio.autoplay = true;
-      };
+      const chatId = currentUser.uid < partnerUid ? currentUser.uid + '_' + partnerUid : partnerUid + '_' + currentUser.uid;
 
-      const offer = await peer.createOffer();
-      await peer.setLocalDescription(offer);
-      set(ref(db, `calls/${toUID}/offer`), {
-        from: currentUser.uid,
-        offer
+      chatRef = ref(db, 'chats/' + chatId);
+      typingRef = ref(db, `typing/${chatId}/${currentUser.uid}`);
+      partnerTypingRef = ref(db, `typing/${chatId}/${partnerUid}`);
+
+      onValue(chatRef, snap => {
+        chatHistory.innerHTML = '';
+        snap.forEach(msg => {
+          const m = msg.val();
+          const div = document.createElement('div');
+          div.className = m.from === currentUser.uid ? 'text-end mb-2' : 'text-start mb-2';
+          div.innerHTML = `<span class="badge ${m.from === currentUser.uid ? 'bg-primary' : 'bg-secondary'}">${m.text}</span><br><small class="text-muted">${new Date(m.createdAt).toLocaleTimeString()}</small>`;
+          chatHistory.appendChild(div);
+        });
+        chatHistory.scrollTop = chatHistory.scrollHeight;
       });
 
-      btnHangup.classList.remove("d-none");
+      onValue(partnerTypingRef, snap => {
+        typingStatus.textContent = snap.val() ? `${partnerName} está escribiendo...` : '';
+      });
+
+      chatModal.show();
     }
 
-    // Recibir llamada
+    chatInput.oninput = () => {
+      if (!typingRef) return;
+      set(typingRef, true);
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => remove(typingRef), 1500);
+    };
+
+    chatForm.onsubmit = async e => {
+      e.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text || !chatRef) return;
+      await push(chatRef, { from: currentUser.uid, text, createdAt: Date.now() });
+      chatInput.value = '';
+      remove(typingRef);
+    };
+
+    btnCall.onclick = async () => {
+      peerConnection = new RTCPeerConnection(servers);
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+      peerConnection.onicecandidate = e => {
+        if (e.candidate) push(ref(db, `calls/${chatPartner}/candidates`), e.candidate.toJSON());
+      };
+
+      peerConnection.ontrack = e => {
+        remoteAudio.srcObject = e.streams[0];
+      };
+
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      set(ref(db, `calls/${chatPartner}/offer`), { sdp: offer.sdp, type: offer.type, from: currentUser.uid });
+
+      listenForAnswer();
+      listenForCandidates();
+      btnHangup.classList.remove('d-none');
+    };
+
+    function listenForAnswer() {
+      onValue(ref(db, `calls/${currentUser.uid}/answer`), async snap => {
+        if (!snap.exists()) return;
+        const answer = snap.val();
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        remove(ref(db, `calls/${currentUser.uid}/answer`));
+      });
+    }
+
+    function listenForCandidates() {
+      onValue(ref(db, `calls/${currentUser.uid}/candidates`), snap => {
+        snap.forEach(c => peerConnection.addIceCandidate(new RTCIceCandidate(c.val())));
+        remove(ref(db, `calls/${currentUser.uid}/candidates`));
+      });
+    }
+
     function listenForCalls() {
       onValue(ref(db, `calls/${currentUser.uid}/offer`), async snap => {
         if (!snap.exists()) return;
-        const data = snap.val();
-        callerIdText.textContent = `De: ${data.from}`;
-        incomingModal.show();
+        const offer = snap.val();
+        const accept = confirm("Llamada entrante. ¿Aceptar?");
+        if (!accept) return;
 
-        btnAcceptCall.onclick = async () => {
-          incomingModal.hide();
-          peer = new RTCPeerConnection(servers);
-          localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+        peerConnection = new RTCPeerConnection(servers);
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
-          peer.onicecandidate = e => {
-            if (e.candidate) {
-              push(ref(db, `calls/${data.from}/candidates`), e.candidate.toJSON());
-            }
-          };
-
-          peer.ontrack = e => {
-            const audio = new Audio();
-            audio.srcObject = e.streams[0];
-            audio.autoplay = true;
-          };
-
-          await peer.setRemoteDescription(data.offer);
-          const answer = await peer.createAnswer();
-          await peer.setLocalDescription(answer);
-          set(ref(db, `calls/${data.from}/answer`), answer);
-          btnHangup.classList.remove("d-none");
+        peerConnection.onicecandidate = e => {
+          if (e.candidate) push(ref(db, `calls/${offer.from}/candidates`), e.candidate.toJSON());
         };
+        peerConnection.ontrack = e => remoteAudio.srcObject = e.streams[0];
 
-        btnRejectCall.onclick = () => {
-          remove(ref(db, `calls/${currentUser.uid}`));
-          incomingModal.hide();
-        };
-      });
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        set(ref(db, `calls/${offer.from}/answer`), answer);
 
-      // Escuchar respuesta
-      onValue(ref(db, `calls/${currentUser.uid}/answer`), async snap => {
-        if (snap.exists() && peer) {
-          const answer = snap.val();
-          await peer.setRemoteDescription(answer);
-        }
-      });
-
-      // ICE candidates
-      onValue(ref(db, `calls/${currentUser.uid}/candidates`), snap => {
-        snap.forEach(child => {
-          const candidate = new RTCIceCandidate(child.val());
-          peer.addIceCandidate(candidate);
-        });
+        listenForCandidates();
+        btnHangup.classList.remove('d-none');
       });
     }
 
-    // Finalizar llamada
     btnHangup.onclick = () => {
-      if (peer) peer.close();
+      if (peerConnection) peerConnection.close();
       if (localStream) localStream.getTracks().forEach(t => t.stop());
-      peer = null;
+      remoteAudio.srcObject = null;
+      peerConnection = null;
       localStream = null;
+      btnHangup.classList.add('d-none');
       remove(ref(db, `calls/${currentUser.uid}`));
-      btnHangup.classList.add("d-none");
     };
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
