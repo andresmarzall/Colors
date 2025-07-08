@@ -13,139 +13,75 @@
       --danger-color: #FF3B30;
       --dark-color: #1C1C1E;
       --light-color: #F2F2F7;
-      --gradient-start: #007AFF;
-      --gradient-end: #00D4FF;
     }
     
     body {
-      background: linear-gradient(135deg, var(--light-color) 0%, #e6f7ff 100%);
+      background-color: var(--light-color);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      min-height: 100vh;
-      margin: 0;
-      padding: 0;
     }
     
     .card {
-      border-radius: 18px;
+      border-radius: 14px;
       border: none;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-      overflow: hidden;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
     
     .btn-primary {
-      background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+      background-color: var(--primary-color);
       border: none;
-      border-radius: 50px;
-      font-weight: 600;
-      padding: 10px 25px;
-      transition: all 0.3s ease;
-    }
-    
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(0, 122, 255, 0.4);
     }
     
     .btn-success {
       background-color: var(--success-color);
       border: none;
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
     
     .btn-danger {
       background-color: var(--danger-color);
       border: none;
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
     
     .modal-content {
-      border-radius: 25px;
-      overflow: hidden;
-      border: none;
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+      border-radius: 20px;
     }
     
     .call-control {
-      width: 70px;
-      height: 70px;
+      width: 60px;
+      height: 60px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 15px;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    
-    .call-control:hover {
-      transform: scale(1.1);
+      margin: 0 10px;
     }
     
     .user-avatar {
-      width: 120px;
-      height: 120px;
+      width: 80px;
+      height: 80px;
       border-radius: 50%;
       object-fit: cover;
-      border: 4px solid white;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-      margin: 0 auto 20px;
+      border: 3px solid white;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .call-timer {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: 1px;
     }
     
     .call-status {
-      font-size: 22px;
-      font-weight: 600;
-      margin-bottom: 10px;
-      color: #333;
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 5px;
     }
     
     .user-item {
       transition: all 0.2s ease;
-      border-radius: 15px;
-      overflow: hidden;
-      margin-bottom: 10px;
-      border: none;
     }
     
     .user-item:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    }
-    
-    .status-badge {
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-    
-    .header {
-      background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
-      padding: 20px 0;
-      margin-bottom: 30px;
-      border-radius: 0 0 25px 25px;
-      color: white;
-      box-shadow: 0 4px 20px rgba(0, 122, 255, 0.3);
-    }
-    
-    .container {
-      max-width: 800px;
-      padding-bottom: 50px;
+      transform: translateY(-2px);
     }
     
     .ripple {
@@ -175,74 +111,23 @@
       opacity: 0.3;
       transition: 0s;
     }
-    
-    .app-title {
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      margin-bottom: 5px;
-    }
-    
-    .app-subtitle {
-      font-weight: 300;
-      opacity: 0.9;
-    }
-    
-    .call-animation {
-      position: relative;
-      width: 120px;
-      height: 120px;
-      margin: 0 auto 30px;
-    }
-    
-    .call-animation:before, .call-animation:after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border: 3px solid var(--primary-color);
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-    
-    .call-animation:after {
-      animation-delay: 0.5s;
-    }
-    
-    @keyframes pulse {
-      0% {
-        transform: scale(0.8);
-        opacity: 1;
-      }
-      100% {
-        transform: scale(1.5);
-        opacity: 0;
-      }
-    }
   </style>
 </head>
 <body>
-  <div class="header text-center">
-    <div class="container">
-      <h1 class="app-title"><i class="bi bi-telephone-plus me-2"></i>Llamadas Premium</h1>
-      <p class="app-subtitle">Conectate con tus contactos en tiempo real</p>
-    </div>
-  </div>
-  
-  <div class="container py-2">
+  <div class="container py-4">
+    <!-- Alert Container -->
+    <div id="alertContainer" style="position: fixed; top: 20px; right: 20px; z-index: 1000;"></div>
+
     <!-- Login View -->
     <div id="loginView" class="row justify-content-center">
-      <div class="col-md-6 col-lg-5">
+      <div class="col-md-6 col-lg-4">
         <div class="card shadow">
           <div class="card-body text-center p-5">
             <div class="mb-4">
-              <div class="call-animation">
-                <i class="bi bi-telephone-plus" style="font-size: 3rem; color: var(--primary-color); position: relative; z-index: 2; line-height: 120px;"></i>
-              </div>
+              <i class="bi bi-telephone-plus" style="font-size: 3rem; color: var(--primary-color);"></i>
             </div>
-            <h2 class="mb-3">Bienvenido</h2>
-            <p class="text-muted mb-4">Inicia sesión para comenzar a realizar llamadas</p>
+            <h2 class="mb-4">Llamadas Premium</h2>
+            <p class="text-muted mb-4">Conectate con tus contactos</p>
             <button id="btnLoginGoogle" class="btn btn-danger btn-lg w-100 ripple">
               <i class="bi bi-google me-2"></i> Continuar con Google
             </button>
@@ -254,14 +139,11 @@
     <!-- Dashboard View -->
     <div id="dashboardView" class="d-none">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 class="mb-0"><i class="bi bi-people-fill me-2"></i>Contactos Disponibles</h2>
-          <p class="text-muted mb-0">Haz clic en un contacto para llamar</p>
-        </div>
+        <h2 class="mb-0"><i class="bi bi-people-fill me-2"></i>Contactos</h2>
         <div class="d-flex align-items-center">
-          <img id="userAvatar" src="" class="rounded-circle me-2" width="45" height="45">
+          <img id="userAvatar" src="" class="rounded-circle me-2" width="40" height="40">
           <button id="btnLogout" class="btn btn-outline-danger btn-sm ripple">
-            <i class="bi bi-box-arrow-right"></i> Salir
+            <i class="bi bi-box-arrow-right"></i>
           </button>
         </div>
       </div>
@@ -278,11 +160,9 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-body text-center p-5">
-            <div class="call-animation">
-              <img id="outgoingCallAvatar" src="" class="user-avatar">
-            </div>
-            <h4 id="outgoingCallName" class="call-status">Llamando...</h4>
-            <p class="text-muted mb-4">Esperando respuesta</p>
+            <img id="outgoingCallAvatar" src="" class="user-avatar mb-4">
+            <h4 id="outgoingCallName" class="call-status mb-3">Llamando a...</h4>
+            <p id="outgoingCallTimer" class="call-timer mb-4">00:00</p>
             <div class="d-flex justify-content-center mt-4">
               <button id="btnCancelCall" class="btn btn-danger call-control ripple">
                 <i class="bi bi-telephone-x-fill" style="font-size: 1.5rem;"></i>
@@ -299,8 +179,8 @@
         <div class="modal-content">
           <div class="modal-body text-center p-5">
             <img id="activeCallAvatar" src="" class="user-avatar mb-4">
-            <h4 id="activeCallName" class="call-status">En llamada</h4>
-            <p class="text-muted mb-4">Llamada en curso</p>
+            <h4 id="activeCallName" class="call-status mb-3">En llamada con...</h4>
+            <p id="activeCallTimer" class="call-timer mb-4">00:00</p>
             <div class="d-flex justify-content-center mt-4">
               <button id="btnToggleMute" class="btn btn-outline-secondary call-control ripple me-3">
                 <i id="muteIcon" class="bi bi-mic-fill" style="font-size: 1.5rem;"></i>
@@ -319,10 +199,8 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-body text-center p-5">
-            <div class="call-animation">
-              <img id="incomingCallAvatar" src="" class="user-avatar">
-            </div>
-            <h4 id="incomingCallName" class="call-status">Llamada entrante</h4>
+            <img id="incomingCallAvatar" src="" class="user-avatar mb-4">
+            <h4 id="incomingCallName" class="call-status mb-3">Llamada entrante</h4>
             <p class="text-muted mb-4">¿Deseas aceptar la llamada?</p>
             <div class="d-flex justify-content-center mt-4">
               <button id="btnAcceptCall" class="btn btn-success call-control ripple me-3">
@@ -336,11 +214,35 @@
         </div>
       </div>
     </div>
+
+    <!-- Audio elements -->
+    <audio id="localAudio" autoplay muted></audio>
+    <audio id="remoteAudio" autoplay></audio>
+    <audio id="ringtone" loop></audio>
   </div>
 
   <script type="module">
-    // Simulamos la funcionalidad de llamadas sin Firebase para esta demostración
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getDatabase, ref, set, onValue, onDisconnect, remove, update, push, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
+      authDomain: "llamapp-c8d6c.firebaseapp.com",
+      databaseURL: "https://llamapp-c8d6c-default-rtdb.firebaseio.com",
+      projectId: "llamapp-c8d6c",
+      storageBucket: "llamapp-c8d6c.appspot.com",
+      messagingSenderId: "132119278171",
+      appId: "1:132119278171:web:d11d942c8dc2f4ed9a057e",
+      measurementId: "G-4VN80ZMS5L"
+    };
     
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getDatabase();
+
     // UI Elements
     const loginView = document.getElementById('loginView');
     const dashboardView = document.getElementById('dashboardView');
@@ -348,182 +250,480 @@
     const btnLogout = document.getElementById('btnLogout');
     const userAvatar = document.getElementById('userAvatar');
     const usersList = document.getElementById('usersList');
-    
+    const alertContainer = document.getElementById('alertContainer');
+
     // Call Modals
     const outgoingCallModal = new bootstrap.Modal(document.getElementById('outgoingCallModal'));
     const activeCallModal = new bootstrap.Modal(document.getElementById('activeCallModal'));
     const incomingCallModal = new bootstrap.Modal(document.getElementById('incomingCallModal'));
-    
+
     // Outgoing Call Elements
     const outgoingCallName = document.getElementById('outgoingCallName');
     const outgoingCallAvatar = document.getElementById('outgoingCallAvatar');
+    const outgoingCallTimer = document.getElementById('outgoingCallTimer');
     const btnCancelCall = document.getElementById('btnCancelCall');
-    
+
     // Active Call Elements
     const activeCallName = document.getElementById('activeCallName');
     const activeCallAvatar = document.getElementById('activeCallAvatar');
+    const activeCallTimer = document.getElementById('activeCallTimer');
     const btnEndCall = document.getElementById('btnEndCall');
     const btnToggleMute = document.getElementById('btnToggleMute');
     const muteIcon = document.getElementById('muteIcon');
-    
+
     // Incoming Call Elements
     const incomingCallName = document.getElementById('incomingCallName');
     const incomingCallAvatar = document.getElementById('incomingCallAvatar');
     const btnAcceptCall = document.getElementById('btnAcceptCall');
     const btnRejectCall = document.getElementById('btnRejectCall');
-    
+
+    // Audio Elements
+    const localAudio = document.getElementById('localAudio');
+    const remoteAudio = document.getElementById('remoteAudio');
+    const ringtone = document.getElementById('ringtone');
+
     // App State
     let currentUser = null;
+    let callInterval, peerConnection, localStream, currentCallId;
     let isMuted = false;
+    let callStartTime;
     let currentCallPartner = null;
     
-    // User data for demo
-    const demoUsers = [
-      { id: '1', name: 'Carlos Rodríguez', status: 'online', photo: 'https://randomuser.me/api/portraits/men/32.jpg' },
-      { id: '2', name: 'María González', status: 'online', photo: 'https://randomuser.me/api/portraits/women/44.jpg' },
-      { id: '3', name: 'Juan Pérez', status: 'online', photo: 'https://randomuser.me/api/portraits/men/22.jpg' },
-      { id: '4', name: 'Ana Martínez', status: 'offline', photo: 'https://randomuser.me/api/portraits/women/33.jpg' },
-      { id: '5', name: 'Luis Sánchez', status: 'online', photo: 'https://randomuser.me/api/portraits/men/45.jpg' }
-    ];
-    
+    // ICE Servers Configuration
+    const iceServers = {
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+        { 
+          urls: "turn:global.turn.twilio.com:3478?transport=udp",
+          username: "4b2f2c8e8d0a8a9a0e1e5a5e5e5a5e5e",
+          credential: "4b2f2c8e8d0a8a9a0e1e5a5e5e5a5e5e"
+        }
+      ]
+    };
+
     // Helper Functions
     function showAlert(type, message) {
-      // Simulación para demostración
-      console.log(`${type.toUpperCase()}: ${message}`);
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type} alert-dismissible fade show`;
+      alert.innerHTML = `
+        <div class="d-flex align-items-center">
+          <i class="bi ${type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} me-2"></i>
+          <span>${message}</span>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      alertContainer.appendChild(alert);
+      
+      setTimeout(() => {
+        alert.classList.remove('show');
+        setTimeout(() => alert.remove(), 150);
+      }, 5000);
     }
-    
+
+    function playRingtone() {
+      ringtone.src = 'https://assets.mixkit.co/sfx/preview/mixkit-phone-ring-1938.mp3';
+      ringtone.play().catch(e => console.log("Error playing ringtone:", e));
+    }
+
+    function stopRingtone() {
+      ringtone.pause();
+      ringtone.currentTime = 0;
+    }
+
+    function formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+    }
+
+    function startCallTimer(timerElement) {
+      let seconds = 0;
+      clearInterval(callInterval);
+      callInterval = setInterval(() => {
+        seconds++;
+        timerElement.textContent = formatTime(seconds);
+      }, 1000);
+      return callInterval;
+    }
+
     // Authentication
     btnLoginGoogle.addEventListener('click', async () => {
       try {
-        // Simulamos inicio de sesión exitoso
-        currentUser = {
-          uid: 'demo-user',
-          displayName: 'Usuario Demo',
-          email: 'demo@llamadas.com',
-          photoURL: 'https://randomuser.me/api/portraits/men/41.jpg'
-        };
-        
-        loginView.classList.add('d-none');
-        dashboardView.classList.remove('d-none');
-        userAvatar.src = currentUser.photoURL;
-        
-        // Cargar lista de usuarios
-        loadUsers();
-        
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
       } catch (error) {
         showAlert('danger', `Error al iniciar sesión: ${error.message}`);
       }
     });
-    
+
     btnLogout.addEventListener('click', async () => {
       try {
-        // Simulamos cierre de sesión
-        currentUser = null;
-        loginView.classList.remove('d-none');
-        dashboardView.classList.add('d-none');
+        await endCall();
+        await signOut(auth);
       } catch (error) {
         showAlert('danger', `Error al cerrar sesión: ${error.message}`);
       }
     });
-    
-    // Load Users List
-    function loadUsers() {
-      usersList.innerHTML = '';
+
+    // User Presence Management
+    function setupUserPresence(user) {
+      const userRef = ref(db, `users/${user.uid}`);
+      const presenceRef = ref(db, `presence/${user.uid}`);
       
-      demoUsers.forEach(user => {
-        if (user.status === 'offline') return;
-        
-        const userItem = document.createElement('li');
-        userItem.className = 'list-group-item user-item';
-        userItem.innerHTML = `
-          <div class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-              <img src="${user.photo}" class="rounded-circle me-3" width="50" height="50">
-              <div>
-                <h6 class="mb-0">${user.name}</h6>
-                <small class="text-muted">
-                  <span class="badge bg-success status-badge">
-                    En línea
-                  </span>
-                </small>
-              </div>
-            </div>
-            <button class="btn btn-primary btn-sm ripple" onclick="startCall('${user.id}', '${user.name}', '${user.photo}')">
-              <i class="bi bi-telephone"></i> Llamar
-            </button>
-          </div>
-        `;
-        
-        usersList.appendChild(userItem);
+      // Update user profile
+      set(userRef, {
+        uid: user.uid,
+        name: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL,
+        lastSeen: Date.now()
+      });
+      
+      // Set presence status
+      set(presenceRef, {
+        uid: user.uid,
+        name: user.displayName,
+        photoURL: user.photoURL,
+        status: 'online',
+        lastChanged: Date.now()
+      });
+      
+      // Clean up on disconnect
+      onDisconnect(presenceRef).set({
+        uid: user.uid,
+        status: 'offline',
+        lastChanged: Date.now()
       });
     }
-    
-    // Call Management
-    function startCall(targetId, targetName, targetPhoto) {
-      currentCallPartner = { id: targetId, name: targetName, photo: targetPhoto };
+
+    // Load Users List
+    function loadUsers() {
+      const usersRef = ref(db, 'presence');
       
-      // Update UI for outgoing call
-      outgoingCallName.textContent = `Llamando a ${targetName}`;
-      outgoingCallAvatar.src = targetPhoto;
-      outgoingCallModal.show();
-      
-      // Simular llamada después de 3 segundos
-      setTimeout(() => {
-        outgoingCallModal.hide();
-        activeCallName.textContent = `En llamada con ${targetName}`;
-        activeCallAvatar.src = targetPhoto;
-        activeCallModal.show();
-      }, 3000);
+      onValue(usersRef, (snapshot) => {
+        usersList.innerHTML = '';
+        
+        snapshot.forEach((userSnapshot) => {
+          const user = userSnapshot.val();
+          if (user.uid === currentUser.uid) return;
+          
+          const userItem = document.createElement('li');
+          userItem.className = 'list-group-item user-item';
+          userItem.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center">
+                <img src="${user.photoURL}" class="rounded-circle me-3" width="40" height="40">
+                <div>
+                  <h6 class="mb-0">${user.name}</h6>
+                  <small class="text-muted">
+                    <span class="badge ${user.status === 'online' ? 'bg-success' : 'bg-secondary'}">
+                      ${user.status === 'online' ? 'En línea' : 'Desconectado'}
+                    </span>
+                  </small>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm ripple" onclick="startCall('${user.uid}', '${user.name}', '${user.photoURL}')">
+                <i class="bi bi-telephone"></i> Llamar
+              </button>
+            </div>
+          `;
+          
+          usersList.appendChild(userItem);
+        });
+      });
     }
-    
-    function endCall() {
-      outgoingCallModal.hide();
-      activeCallModal.hide();
-      incomingCallModal.hide();
+
+    // Call Management
+    async function startCall(targetUid, targetName, targetPhoto) {
+      try {
+        currentCallPartner = { uid: targetUid, name: targetName, photo: targetPhoto };
+        currentCallId = `${currentUser.uid}_${targetUid}_${Date.now()}`;
+        
+        // Update UI for outgoing call
+        outgoingCallName.textContent = `Llamando a ${targetName}`;
+        outgoingCallAvatar.src = targetPhoto;
+        outgoingCallTimer.textContent = '00:00';
+        outgoingCallModal.show();
+        
+        // Setup WebRTC
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        localAudio.srcObject = localStream;
+        
+        peerConnection = new RTCPeerConnection(iceServers);
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+        
+        // ICE Candidate Handling
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate) {
+            const candidatesRef = ref(db, `calls/${currentCallId}/callerCandidates`);
+            push(candidatesRef, event.candidate.toJSON());
+          }
+        };
+        
+        peerConnection.ontrack = (event) => {
+          remoteAudio.srcObject = event.streams[0];
+        };
+        
+        // Create call in Firebase
+        const callRef = ref(db, `calls/${currentCallId}`);
+        await set(callRef, {
+          callId: currentCallId,
+          callerId: currentUser.uid,
+          callerName: currentUser.displayName,
+          callerPhoto: currentUser.photoURL,
+          calleeId: targetUid,
+          status: 'calling',
+          createdAt: Date.now()
+        });
+        
+        // Listen for call answer/rejection
+        onValue(callRef, async (snapshot) => {
+          const callData = snapshot.val();
+          if (!callData) return;
+          
+          if (callData.status === 'rejected') {
+            await endCall();
+          } else if (callData.status === 'answered') {
+            outgoingCallModal.hide();
+            activeCallName.textContent = `En llamada con ${targetName}`;
+            activeCallAvatar.src = targetPhoto;
+            activeCallTimer.textContent = '00:00';
+            activeCallModal.show();
+            startCallTimer(activeCallTimer);
+          } else if (callData.status === 'ended') {
+            await endCall();
+          }
+        });
+        
+        // Listen for answer
+        onValue(ref(db, `calls/${currentCallId}/answer`), async (snapshot) => {
+          const answer = snapshot.val();
+          if (answer && !peerConnection.currentRemoteDescription) {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+          }
+        });
+        
+        // Listen for callee candidates
+        onValue(ref(db, `calls/${currentCallId}/calleeCandidates`), (snapshot) => {
+          snapshot.forEach((candidate) => {
+            peerConnection.addIceCandidate(new RTCIceCandidate(candidate.val()));
+          });
+        });
+        
+        // Create offer
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        await update(callRef, { offer: offer });
+        
+        // Start call timer (for outgoing call waiting)
+        startCallTimer(outgoingCallTimer);
+        
+      } catch (error) {
+        console.error('Error starting call:', error);
+        await endCall();
+      }
+    }
+
+    // Listen for incoming calls
+    function listenForIncomingCalls() {
+      const callsRef = ref(db, 'calls');
+      
+      onValue(callsRef, (snapshot) => {
+        snapshot.forEach((callSnapshot) => {
+          const callData = callSnapshot.val();
+          
+          // Check if this is an incoming call for current user
+          if (callData.calleeId === currentUser.uid && callData.status === 'calling') {
+            currentCallId = callData.callId;
+            currentCallPartner = {
+              uid: callData.callerId,
+              name: callData.callerName,
+              photo: callData.callerPhoto
+            };
+            
+            // Update UI for incoming call
+            incomingCallName.textContent = `${callData.callerName} te está llamando`;
+            incomingCallAvatar.src = callData.callerPhoto;
+            playRingtone();
+            incomingCallModal.show();
+            
+            // Setup accept/reject handlers
+            btnAcceptCall.onclick = async () => {
+              stopRingtone();
+              await answerCall();
+              incomingCallModal.hide();
+            };
+            
+            btnRejectCall.onclick = async () => {
+              stopRingtone();
+              await rejectCall();
+         incomingCallModal.hide();
+            };
+          }
+        });
+      });
+    }
+
+    async function answerCall() {
+      try {
+        const callRef = ref(db, `calls/${currentCallId}`);
+        
+        // Get user media
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        localAudio.srcObject = localStream;
+        
+        // Create peer connection
+        peerConnection = new RTCPeerConnection(iceServers);
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+        
+        // ICE Candidate Handling
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate) {
+            const candidatesRef = ref(db, `calls/${currentCallId}/calleeCandidates`);
+            push(candidatesRef, event.candidate.toJSON());
+          }
+        };
+        
+        peerConnection.ontrack = (event) => {
+          remoteAudio.srcObject = event.streams[0];
+        };
+        
+        // Listen for offer
+        onValue(ref(db, `calls/${currentCallId}/offer`), async (snapshot) => {
+          const offer = snapshot.val();
+          if (offer && !peerConnection.currentRemoteDescription) {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            
+            // Create answer
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            await update(callRef, { 
+              answer: answer,
+              status: 'answered'
+            });
+          }
+        });
+        
+        // Listen for caller candidates
+        onValue(ref(db, `calls/${currentCallId}/callerCandidates`), (snapshot) => {
+          snapshot.forEach((candidate) => {
+            peerConnection.addIceCandidate(new RTCIceCandidate(candidate.val()));
+          });
+        });
+        
+        // Listen for call ending
+        onValue(callRef, async (snapshot) => {
+          const callData = snapshot.val();
+          if (callData && callData.status === 'ended') {
+            await endCall();
+          }
+        });
+        
+        // Update UI for active call
+        activeCallName.textContent = `En llamada con ${currentCallPartner.name}`;
+        activeCallAvatar.src = currentCallPartner.photo;
+        activeCallTimer.textContent = '00:00';
+        activeCallModal.show();
+        startCallTimer(activeCallTimer);
+        
+      } catch (error) {
+        console.error('Error answering call:', error);
+        await endCall();
+      }
+    }
+
+    async function rejectCall() {
+      const callRef = ref(db, `calls/${currentCallId}`);
+      await update(callRef, { status: 'rejected' });
+      setTimeout(() => remove(callRef), 2000);
+      currentCallId = null;
       currentCallPartner = null;
     }
-    
-    function simulateIncomingCall() {
-      const caller = demoUsers[Math.floor(Math.random() * demoUsers.length)];
-      incomingCallName.textContent = `${caller.name} te está llamando`;
-      incomingCallAvatar.src = caller.photo;
-      incomingCallModal.show();
+
+    async function endCall() {
+      try {
+        // Stop all media tracks
+        if (localStream) {
+          localStream.getTracks().forEach(track => track.stop());
+          localStream = null;
+        }
+        
+        // Close peer connection
+        if (peerConnection) {
+          peerConnection.close();
+          peerConnection = null;
+        }
+        
+        // Clear timer
+        clearInterval(callInterval);
+        
+        // Stop ringtone
+        stopRingtone();
+        
+        // Update call status in Firebase
+        if (currentCallId) {
+          const callRef = ref(db, `calls/${currentCallId}`);
+          await update(callRef, { status: 'ended', endedAt: Date.now() });
+          setTimeout(() => remove(callRef), 2000);
+        }
+        
+        // Close all modals
+        outgoingCallModal.hide();
+        activeCallModal.hide();
+        incomingCallModal.hide();
+        
+        // Reset call state
+        currentCallId = null;
+        currentCallPartner = null;
+        
+      } catch (error) {
+        console.error('Error ending call:', error);
+      }
     }
-    
+
     // Mute/Unmute
     btnToggleMute.addEventListener('click', () => {
+      if (!localStream) return;
+      
       isMuted = !isMuted;
+      localStream.getAudioTracks().forEach(track => {
+        track.enabled = !isMuted;
+      });
+      
       muteIcon.className = isMuted ? 'bi bi-mic-mute-fill' : 'bi bi-mic-fill';
       btnToggleMute.classList.toggle('btn-secondary', isMuted);
       btnToggleMute.classList.toggle('btn-outline-secondary', !isMuted);
     });
-    
+
     // Cancel Call
     btnCancelCall.addEventListener('click', endCall);
-    
+
     // End Call
     btnEndCall.addEventListener('click', endCall);
-    
-    // Accept Call
-    btnAcceptCall.addEventListener('click', () => {
-      const callerName = document.getElementById('incomingCallName').textContent.replace(' te está llamando', '');
-      activeCallName.textContent = `En llamada con ${callerName}`;
-      activeCallAvatar.src = document.getElementById('incomingCallAvatar').src;
-      incomingCallModal.hide();
-      activeCallModal.show();
+
+    // Auth State Observer
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        loginView.classList.add('d-none');
+        dashboardView.classList.remove('d-none');
+        userAvatar.src = user.photoURL;
+        
+        setupUserPresence(user);
+        loadUsers();
+        listenForIncomingCalls();
+      } else {
+        currentUser = null;
+        loginView.classList.remove('d-none');
+        dashboardView.classList.add('d-none');
+      }
     });
-    
-    // Reject Call
-    btnRejectCall.addEventListener('click', () => {
-      incomingCallModal.hide();
-    });
-    
+
     // Expose functions to window
     window.startCall = startCall;
     window.endCall = endCall;
-    
-    // Simular una llamada entrante después de 10 segundos
-    setTimeout(simulateIncomingCall, 10000);
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
