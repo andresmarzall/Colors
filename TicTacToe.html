@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>TicTacToe 1v1 | Firebase</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <style>
+    .cell { width: 80px; height: 80px; font-size: 2rem; }
+    @media (max-width: 576px) { .cell { width: 60px; height: 60px; font-size:1.5rem; } }
+    #board .row { justify-content: center; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
+    <a class="navbar-brand">TicTacToe 1v1</a>
+    <div class="collapse navbar-collapse justify-content-end">
+      <div id="userArea"></div>
+    </div>
+  </nav>
+
+  <div class="container text-center mt-4" id="mainContent" style="display:none;">
+    <button id="btnFind" class="btn btn-primary mb-3">Buscar partida</button>
+    <div id="status"></div>
+    <div id="board" class="mx-auto mt-4"></div>
+  </div>
+
+  <div class="modal fade" id="resultModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content text-center">
+        <div class="modal-header"><h5 class="modal-title">Resultado</h5></div>
+        <div class="modal-body"><p id="resultText"></p></div>
+        <div class="modal-footer">
+          <button class="btn btn-success" onclick="rematch()">Revancha</button>
+          <button class="btn btn-secondary" onclick="location.reload()">Salir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+  import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+  const firebaseConfig = {/* tu configuración ya incluida */};
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const auth = getAuth(), db = getDatabase(), provider = new GoogleAuthProvider();
+
+  let uid, name, symbol, roomId;
+  const userArea = document.getElementById('userArea');
+  const mainContent = document.getElementById('mainContent');
+  const btnFind = document.getElementById('btnFind');
+  const status = document.getElementById('status');
+  const board = document.getElementById('board');
+  const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+  const resultText = document.getElementById('resultText');
+
+  function login(){ signInWithPopup(auth,provider).catch(console.error) }
+  function logout(){ signOut(auth).catch(console.error) }
+  window.rematch = () => { location.reload() }
+
+  onAuthStateChanged(auth, user => {
+    if(user){
+      uid = user.uid; name = user.displayName;
+      userArea.innerHTML = `<span class="text-white me-2">${name}</span><button class="btn btn-outline-light btn-sm" onclick="logout()">Salir</button>`;
+      mainContent.style.display='block';
+    } else {
+      userArea.innerHTML = `<button class="btn btn-outline-light btn-sm" onclick="login()">Login Google</button>`;
+      mainContent.style.display='none';
+    }
+  });
+
+  btnFind.onclick = () => {
+    btnFind.disabled = true;
+    status.innerText = 'Buscando partida...';
+    const roomsRef = ref(db, 'rooms');
+    onValue(roomsRef, snap => {
+      if(roomId) return;
+      const rooms = snap.val()||{};
+      const waiting = Object.entries(rooms).find(([k,v]) => v.player2===null);
+      if(waiting){
+        [roomId,] = waiting;
+        joinRoom(roomId);
+      } else {
+        createRoom();
+      }
+    }, {onlyOnce:true});
+  };
+
+  function createRoom(){
+    const newRoom = push(ref(db,'rooms'));
+    roomId = newRoom.key;
+    symbol = 'X';
+    set(newRoom, { player1: {uid,name}, player2:null, turn:'X', board:Array(9).fill(''), winner:null });
+    listenRoom();
+    status.innerText = 'Esperando jugador...';
+  }
+
+  function joinRoom(id){
+    const roomRef = ref(db,`rooms/${id}`);
+    update(roomRef, { player2:{uid,name} });
+    symbol = 'O';
+    roomId = id;
+    listenRoom();
+  }
+
+  function listenRoom(){
+    const roomRef = ref(db,`rooms/${roomId}`);
+    onValue(roomRef, snapshot => {
+      const room = snapshot.val();
+      if(!room) return;
+      const { player1, player2, turn, board:bd, winner } = room;
+      if(!player2){
+        status.innerText = 'Esperando segundo jugador...';
+        return;
+      }
+      status.innerText = `${turn==='X'?player1.name:player2.name}'s turno (${turn})`;
+      drawBoard(bd, turn, winner);
+      if(winner) endGame(winner);
+    });
+  }
+
+  function drawBoard(bd,turn,winner){
+    board.innerHTML = '';
+    for(let i=0;i<3;i++){
+      const row = document.createElement('div'); row.className='row';
+      for(let j=0;j<3;j++){
+        const idx = 3*i+j;
+        const btn = document.createElement('button');
+        btn.className='btn btn-outline-primary cell m-1';
+        btn.innerText = bd[idx];
+        if(!bd[idx] && !winner && turn===symbol) {
+          btn.onclick = ()=> makeMove(idx);
+        }
+        row.appendChild(btn);
+      }
+      board.appendChild(row);
+    }
+  }
+
+  function makeMove(idx){
+    const roomRef = ref(db,`rooms/${roomId}`);
+    onValue(roomRef, snap=> {
+      let room=snap.val();
+      const { turn, board:bd } = room;
+      if(bd[idx]||turn!==symbol||room.winner) return;
+      bd[idx]=turn;
+      const next = turn==='X'?'O':'X';
+      const winner = checkWin(bd);
+      update(roomRef,{ board:bd, turn:next, winner });
+      if(winner) saveResult(winner);
+    },{onlyOnce:true});
+  }
+
+  function checkWin(b){
+    const lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for(let l of lines){
+      const [a,b1,c]=l;
+      if(b[a] && b[a]===b[b1] && b[a]===b[c]) return b[a];
+    }
+    return b.includes('')?null:'T';
+  }
+
+  function endGame(w){
+    resultText.innerText = w==='T'? 'Empate!' : (w===symbol?'Ganaste!' : 'Perdiste!');
+    resultModal.show();
+  }
+
+  function saveResult(w){
+    const hisRef = ref(db, `history/${uid}`);
+    const winner = w==='T'? 'empate' : (w===symbol? 'win':'lose');
+    const rec = { roomId, result: winner, date: Date.now() };
+    const newRec = push(hisRef);
+    set(newRec, rec);
+  }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
