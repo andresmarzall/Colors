@@ -85,10 +85,8 @@
     <!-- Audio elements -->
     <audio id="localAudio" autoplay muted></audio>
     <audio id="remoteAudio" autoplay></audio>
-
   </div>
 
-  <!-- Firebase + WebRTC Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
@@ -105,14 +103,12 @@
       appId: "1:132119278171:web:d11d942c8dc2f4ed9a057e",
       measurementId: "G-4VN80ZMS5L"
     };
-
     const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
-    const provider = new GoogleAuthProvider();
+    getAnalytics(app);
+    const auth = getAuth();
+    const db = getDatabase();
 
-    // UI Elements
+    // UI
     const loginView = document.getElementById('loginView');
     const dashboardView = document.getElementById('dashboardView');
     const btnLoginGoogle = document.getElementById('btnLoginGoogle');
@@ -144,23 +140,16 @@
     let typingRef = null;
     let partnerTypingRef = null;
 
-    let callInterval;
-    let peerConnection;
-    let localStream;
-    let currentCallId;
+    let callInterval, peerConnection, localStream, currentCallId;
     const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
     function notifySound() {
       const ctx = new AudioContext();
-      const oscillator = ctx.createOscillator();
-      const gain = ctx.createGain();
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.05, ctx.currentTime);
-      oscillator.connect(gain);
-      gain.connect(ctx.destination);
-      oscillator.start();
-      oscillator.stop(ctx.currentTime + 0.15);
+      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.type = 'sine'; osc.frequency.setValueAtTime(880,ctx.currentTime);
+      gain.gain.setValueAtTime(0.05,ctx.currentTime);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime + 0.15);
     }
 
     function showError(msg) {
@@ -172,8 +161,8 @@
     }
 
     btnLoginGoogle.onclick = async () => {
-      try { await signInWithPopup(auth, provider); }
-      catch (e) { showError("Error de login: " + e.message); }
+      try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+      catch (e) { showError("Error login: " + e.message); }
     };
 
     btnLogout.onclick = async () => {
@@ -197,7 +186,6 @@
         loadUsers();
         listenForCalls();
       } else {
-        currentUser = null;
         loginView.classList.remove('d-none');
         dashboardView.classList.add('d-none');
       }
@@ -226,43 +214,32 @@
       });
     }
 
-    // Chat directo existente...
     window.openChat = function(partnerUid, partnerName) {
       chatPartner = partnerUid;
       chatModalLabel.textContent = "Chat con " + partnerName;
       chatHistory.innerHTML = '';
       typingStatus.textContent = '';
-
       if (chatRef) off(chatRef);
       if (partnerTypingRef) off(partnerTypingRef);
-
-      const chatId = currentUser.uid < partnerUid
-        ? currentUser.uid + '_' + partnerUid
-        : partnerUid + '_' + currentUser.uid;
-
+      const chatId = currentUser.uid < partnerUid ? currentUser.uid + '_' + partnerUid : partnerUid + '_' + currentUser.uid;
       chatRef = ref(db, 'chats/' + chatId);
       typingRef = ref(db, `typing/${chatId}/${currentUser.uid}`);
       partnerTypingRef = ref(db, `typing/${chatId}/${partnerUid}`);
-
       onValue(chatRef, snap => {
         chatHistory.innerHTML = '';
         snap.forEach(msg => {
           const m = msg.val();
           const div = document.createElement('div');
           div.className = m.from === currentUser.uid ? 'text-end mb-2' : 'text-start mb-2';
-          div.innerHTML = `
-            <span class="badge ${m.from === currentUser.uid ? 'bg-primary' : 'bg-secondary'}">${m.text}</span><br>
-            <small class="text-muted">${new Date(m.createdAt).toLocaleTimeString()}</small>`;
+          div.innerHTML = `<span class="badge ${m.from===currentUser.uid?'bg-primary':'bg-secondary'}">${m.text}</span><br><small class="text-muted">${new Date(m.createdAt).toLocaleTimeString()}</small>`;
           chatHistory.appendChild(div);
           if (m.from !== currentUser.uid) notifySound();
         });
         chatHistory.scrollTop = chatHistory.scrollHeight;
       });
-
       onValue(partnerTypingRef, snap => {
         typingStatus.textContent = snap.val() ? `${partnerName} está escribiendo...` : '';
       });
-
       chatModal.show();
     };
 
@@ -273,30 +250,20 @@
       clearTimeout(typingTimeout);
       typingTimeout = setTimeout(() => remove(typingRef), 1500);
     };
-
     chatForm.onsubmit = async e => {
       e.preventDefault();
       const text = chatInput.value.trim();
       if (!text || !chatRef) return;
-      await push(chatRef, {
-        from: currentUser.uid,
-        text,
-        createdAt: Date.now()
-      });
+      await push(chatRef, { from: currentUser.uid, text, createdAt: Date.now() });
       chatInput.value = '';
       remove(typingRef);
     };
 
-    // 🚨 Llamadas
-    function startCall(targetUid, targetName) {
+    // Llamadas
+    async function startCall(targetUid, targetName) {
       currentCallId = currentUser.uid + '_' + targetUid;
       const callRef = ref(db, 'calls/' + currentCallId);
-      set(callRef, {
-        from: currentUser.uid,
-        to: targetUid,
-        status: 'calling',
-        fromName: currentUser.displayName
-      });
+      await set(callRef, { from: currentUser.uid, to: targetUid, status: 'calling', fromName: currentUser.displayName });
       setupWebRTC(currentCallId, true);
       callStatus.textContent = "Llamando a " + targetName;
       callTimer.textContent = "00:00";
@@ -307,15 +274,13 @@
     function listenForCalls() {
       onValue(ref(db, 'calls'), snap => {
         snap.forEach(c => {
-          const data = c.val();
-          const id = c.key;
+          const data = c.val(), id = c.key;
           if (data.to === currentUser.uid && data.status === 'calling') {
             currentCallId = id;
             document.getElementById('incomingCallLabel').textContent = `${data.fromName} te está llamando`;
             incomingCallModal.show();
-
             btnAcceptCall.onclick = async () => {
-              update(ref(db, 'calls/' + id), { status: 'accepted' });
+              await update(ref(db, 'calls/' + id), { status: 'accepted' });
               incomingCallModal.hide();
               setupWebRTC(id, false);
               callStatus.textContent = "En llamada con " + data.fromName;
@@ -323,9 +288,8 @@
               callModal.show();
               startCallTimer();
             };
-
             btnRejectCall.onclick = async () => {
-              remove(ref(db, 'calls/' + id));
+              await remove(ref(db, 'calls/' + id));
               incomingCallModal.hide();
             };
           }
@@ -340,28 +304,24 @@
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
       localAudio.srcObject = localStream;
-
       peerConnection.ontrack = e => remoteAudio.srcObject = e.streams[0];
-
       const callRef = ref(db, 'calls/' + callId);
 
       if (isCaller) {
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offer);
-        update(callRef, { offer: offer.toJSON() });
+        await update(callRef, { offer: offer.toJSON() });
       }
 
       onValue(callRef, async snap => {
         const data = snap.val();
         if (!data) return;
-
         if (!isCaller && data.offer && !peerConnection.currentRemoteDescription) {
           await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
           const answer = await peerConnection.createAnswer();
           await peerConnection.setLocalDescription(answer);
-          update(callRef, { answer: answer.toJSON() });
+          await update(callRef, { answer: answer.toJSON() });
         }
-
         if (data.answer && isCaller && !peerConnection.currentRemoteDescription) {
           await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
         }
@@ -369,24 +329,24 @@
 
       peerConnection.onicecandidate = e => {
         if (e.candidate) {
-          const candRef = ref(db, `calls/${callId}/${isCaller ? 'callerCandidates' : 'calleeCandidates'}`);
+          const candRef = ref(db, `calls/${callId}/${isCaller?'callerCandidates':'calleeCandidates'}`);
           push(candRef, e.candidate.toJSON());
         }
       };
 
-      onValue(ref(db, `calls/${callId}/${isCaller ? 'calleeCandidates' : 'callerCandidates'}`), snap => {
+      onValue(ref(db, `calls/${callId}/${isCaller?'calleeCandidates':'callerCandidates'}`), snap => {
         snap.forEach(c => peerConnection.addIceCandidate(new RTCIceCandidate(c.val())));
       });
     }
 
     function startCallTimer() {
-      let seconds = 0;
+      let sec = 0;
       callInterval = setInterval(() => {
-        seconds++;
-        const m = String(Math.floor(seconds / 60)).padStart(2, "0");
-        const s = String(seconds % 60).padStart(2, "0");
+        sec++;
+        const m = String(Math.floor(sec/60)).padStart(2,"0");
+        const s = String(sec%60).padStart(2,"0");
         callTimer.textContent = `${m}:${s}`;
-      }, 1000);
+      },1000);
     }
 
     function stopCall() {
@@ -398,8 +358,10 @@
       clearInterval(callInterval);
     }
 
+    // Exponer funciones globales
+    window.startCall = startCall;
+    window.stopCall = stopCall;
   </script>
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
