@@ -47,6 +47,11 @@
       color: white;
       border-radius: 20px;
     }
+    .user-status {
+      font-size: 0.8rem;
+    }
+    .online { color: #28a745; }
+    .offline { color: #6c757d; }
   </style>
 </head>
 <body class="bg-light">
@@ -130,7 +135,7 @@
         <div class="modal-content call-modal-content">
           <div class="modal-body text-center py-5">
             <div class="mb-4">
-              <i class="bi bi-telephone fs-1"></i>
+              <img id="activeCallAvatar" src="" class="rounded-circle" width="80" height="80">
             </div>
             <h4 id="activeCallWith">En llamada</h4>
             <div class="call-timer my-3" id="callDuration">00:00</div>
@@ -151,7 +156,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getDatabase, ref, set, push, onValue, onDisconnect, remove, update, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, set, push, onValue, onDisconnect, remove, update, off, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
@@ -192,6 +197,7 @@
     // Call elements
     const incomingCallFrom = document.getElementById('incomingCallFrom');
     const activeCallWith = document.getElementById('activeCallWith');
+    const activeCallAvatar = document.getElementById('activeCallAvatar');
     const callDuration = document.getElementById('callDuration');
     const remoteAudio = document.getElementById('remoteAudio');
     const rejectCallBtn = document.getElementById('rejectCallBtn');
@@ -211,6 +217,7 @@
     let currentCall = null; // { callId, callerId, calleeId, status, startedAt, endedAt }
     let callTimer = null;
     let callStartTime = null;
+    let callRef = null; // Reference to the current call in Firebase
 
     function notifySound() {
       const ctx = new AudioContext();
@@ -279,6 +286,11 @@
 
     function loadUsers() {
       onValue(ref(db, 'presence'), snap => {
+        if (!snap.exists()) {
+          usersList.innerHTML = '<li class="list-group-item">No hay usuarios disponibles</li>';
+          return;
+        }
+
         usersList.innerHTML = '';
         snap.forEach(u => {
           const uid = u.key;
@@ -291,7 +303,7 @@
               <img src="${data.photo}" class="rounded-circle me-3" width="40" height="40">
               <div>
                 <div class="fw-bold">${data.name}</div>
-                <small class="text-success">En línea</small>
+                <small class="text-success online">En línea</small>
               </div>
             </div>
             <div>
@@ -328,10 +340,13 @@
 
     function listenForIncomingCalls() {
       const incomingCallsRef = ref(db, `incomingCalls/${currentUser.uid}`);
-      onValue(incomingCallsRef, snap => {
-        const callData = snap.val();
-        if (!callData) return;
+      onValue(incomingCallsRef, async snap => {
+        if (!snap.exists()) {
+          incomingCallModal.hide();
+          return;
+        }
 
+        const callData = snap.val();
         // Show incoming call modal
         incomingCallFrom.textContent = `${callData.callerName} te está llamando`;
         incomingCallModal.show();
@@ -360,7 +375,7 @@
     rejectCallBtn.onclick = () => {
       if (!currentCall) return;
       // Notify caller that call was rejected
-      set(ref(db, `calls/${currentCall.callId}/status`), 'rejected');
+      update(ref(db, `calls/${currentCall.callId}`), { status: 'rejected' });
       // Clean up
       remove(ref(db, `incomingCalls/${currentCall.calleeId}`));
       incomingCallModal.hide();
@@ -393,7 +408,8 @@
           calleeName: partnerName,
           status: 'ringing',
           startedAt: null,
-          endedAt: null
+          endedAt: null,
+          duration: 0
         };
 
         // Save to incomingCalls of the partner
@@ -407,7 +423,7 @@
         set(ref(db, `calls/${callId}`), currentCall);
 
         // Listen for call answer or rejection
-        const callRef = ref(db, `calls/${callId}`);
+        callRef = ref(db, `calls/${callId}`);
         onValue(callRef, async snap => {
           const data = snap.val();
           if (!data) return;
@@ -463,19 +479,23 @@
 
         // Set up remote audio
         peerConnection.ontrack = event => {
-          remoteAudio.srcObject = event.streams[0];
+          remoteStream = event.streams[0];
+          remoteAudio.srcObject = remoteStream;
         };
 
         // ICE candidate exchange
         peerConnection.onicecandidate = event => {
           if (event.candidate) {
-            push(ref(db, `calls/${currentCall.callId}/candidates${isCaller ? 'Callee' : 'Caller'}`), event.candidate.toJSON());
+            const candidatePath = `calls/${currentCall.callId}/candidates${isCaller ? 'Callee' : 'Caller'}`;
+            push(ref(db, candidatePath), event.candidate.toJSON());
           }
         };
 
         // Listen for remote ICE candidates
         const candidatesPath = `calls/${currentCall.callId}/candidates${isCaller ? 'Caller' : 'Callee'}`;
-        onValue(ref(db, candidatesPath), snap => {
+        const candidatesRef = ref(db, candidatesPath);
+        onValue(candidatesRef, snap => {
+          if (!snap.exists()) return;
           snap.forEach(child => {
             const candidate = child.val();
             peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
@@ -487,6 +507,15 @@
           const offer = await peerConnection.createOffer();
           await peerConnection.setLocalDescription(offer);
           set(ref(db, `calls/${currentCall.callId}/offer`), offer);
+          
+          // Listen for answer
+          const answerRef = ref(db, `calls/${currentCall.callId}/answer`);
+          onValue(answerRef, async snap => {
+            const answer = snap.val();
+            if (answer) {
+              await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+            }
+          });
         } else {
           // Listen for offer
           const offerRef = ref(db, `calls/${currentCall.callId}/offer`);
@@ -499,25 +528,19 @@
               set(ref(db, `calls/${currentCall.callId}/answer`), answer);
             }
           });
-
-          // Listen for answer (though as callee, we don't expect to receive an answer)
-          const answerRef = ref(db, `calls/${currentCall.callId}/answer`);
-          onValue(answerRef, snap => {
-            const answer = snap.val();
-            if (answer) {
-              peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-            }
-          });
         }
 
         // Start the call
         activeCallWith.textContent = isCaller ? currentCall.calleeName : currentCall.callerName;
+        // Set avatar for active call
+        const partnerPhoto = await getUserPhoto(isCaller ? currentCall.calleeId : currentCall.callerId);
+        activeCallAvatar.src = partnerPhoto;
         activeCallModal.show();
         callStartTime = new Date();
         startCallTimer();
 
         // Update call status to in-progress
-        update(ref(db, `calls/${currentCall.callId}`), { 
+       update(ref(db, `calls/${currentCall.callId}`), { 
           status: 'in-progress', 
           startedAt: new Date().toISOString() 
         });
@@ -525,6 +548,12 @@
         showError("Error en la llamada: " + e.message);
         endCall();
       }
+    }
+
+    async function getUserPhoto(uid) {
+      const userRef = ref(db, `presence/${uid}`);
+      const snapshot = await get(userRef);
+      return snapshot.val().photo;
     }
 
     function startCallTimer() {
@@ -545,7 +574,7 @@
       clearInterval(callTimer);
 
       // Close peer connection
-if (peerConnection) {
+      if (peerConnection) {
         peerConnection.close();
         peerConnection = null;
       }
@@ -577,7 +606,7 @@ if (peerConnection) {
 
       // Clean up Firebase listeners and nodes
       remove(ref(db, `incomingCalls/${currentCall.calleeId}`));
-      off(ref(db, `calls/${currentCall.callId}`));
+      if (callRef) off(callRef);
 
       currentCall = null;
       callStartTime = null;
