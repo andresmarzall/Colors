@@ -3,52 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tic Tac Toe en Tiem Real</title>
+  <title>Tic Tac Toe en Tiempo Real</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <style>
-    .cell { 
-      width: 80px; 
-      height: 80px; 
-      font-size: 2rem; 
-      font-weight: bold;
-    }
-    @media (max-width: 576px) { 
-      .cell { 
-        width: 60px; 
-        height: 60px; 
-        font-size:1.5rem; 
-      } 
-    }
-    #board .row { 
-      justify-content: center; 
-    }
-    .player-info {
-      background-color: #f8f9fa;
-      border-radius: 5px;
-      padding: 10px;
-      margin-bottom: 15px;
-    }
-    .player-x {
-      color: #0d6efd;
-    }
-    .player-o {
-      color: #dc3545;
-    }
-    #status {
-      font-size: 1.2rem;
-      font-weight: bold;
-      margin: 15px 0;
-    }
+    .cell { width: 80px; height: 80px; font-size: 2rem; font-weight: bold; }
+    @media (max-width: 576px) { .cell { width: 60px; height: 60px; font-size:1.5rem; } }
+    #board .row { justify-content: center; }
+    .player-info { background-color: #f8f9fa; border-radius: 5px; padding: 10px; margin-bottom: 15px; }
+    .player-x { color: #0d6efd; } .player-o { color: #dc3545; }
+    #status { font-size: 1.2rem; font-weight: bold; margin: 15px 0; }
   </style>
 </head>
 <body>
-
-  <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
     <a class="navbar-brand" href="#">Tic Tac Toe</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
-      <span class="navbar-toggler-icon"></span>
-    </button>
     <div class="collapse navbar-collapse justify-content-end" id="navbarContent">
       <div id="userArea" class="d-flex align-items-center"></div>
     </div>
@@ -60,45 +28,32 @@
         <div class="text-center">
           <button id="btnFind" class="btn btn-primary btn-lg mb-4">Buscar Partida</button>
           <div id="status" class="mb-3">Presiona "Buscar Partida" para comenzar</div>
-          
           <div class="d-flex justify-content-around mb-4">
-            <div class="player-info player-x" id="playerXInfo">
-              <strong>Jugador X:</strong> <span id="playerXName">-</span>
-            </div>
-            <div class="player-info player-o" id="playerOInfo">
-              <strong>Jugador O:</strong> <span id="playerOName">-</span>
-            </div>
+            <div class="player-info player-x"><strong>Jugador X:</strong> <span id="playerXName">-</span></div>
+            <div class="player-info player-o"><strong>Jugador O:</strong> <span id="playerOName">-</span></div>
           </div>
-          
           <div id="board" class="mx-auto"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Resultado del juego -->
   <div class="modal fade" id="resultModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Resultado</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <div class="modal-body text-center">
-          <p id="resultText" style="font-size: 1.2rem;"></p>
-        </div>
-        <div class="modal-footer justify-content-center">
-          <button type="button" class="btn btn-success" onclick="rematch()">Revancha</button>
-          <button type="button" class="btn btn-secondary" onclick="location.reload()">Salir</button>
-        </div>
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Resultado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-    </div>
+      <div class="modal-body text-center"><p id="resultText" style="font-size:1.2rem;"></p></div>
+      <div class="modal-footer justify-content-center">
+        <button class="btn btn-success" onclick="rematch()">Revancha</button>
+        <button class="btn btn-secondary" onclick="location.reload()">Salir</button>
+      </div>
+    </div></div>
   </div>
 
-  <!-- Firebase y lógica del juego -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
     import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
@@ -112,14 +67,11 @@
       appId: "1:132119278171:web:d11d942c8dc2f4ed9a057e",
       measurementId: "G-4VN80ZMS5L"
     };
-
     const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
     const auth = getAuth();
     const db = getDatabase();
     const provider = new GoogleAuthProvider();
 
-    // Elementos del DOM
     const userArea = document.getElementById("userArea");
     const mainContent = document.getElementById("mainContent");
     const btnFind = document.getElementById("btnFind");
@@ -127,46 +79,25 @@
     const board = document.getElementById("board");
     const playerXName = document.getElementById("playerXName");
     const playerOName = document.getElementById("playerOName");
-    const playerXInfo = document.getElementById("playerXInfo");
-    const playerOInfo = document.getElementById("playerOInfo");
     const resultModal = new bootstrap.Modal(document.getElementById("resultModal"));
     const resultText = document.getElementById("resultText");
 
-    // Variables del juego
-    let currentUser = null;
-    let uid, name, symbol, roomId;
-    let gameActive = false;
+    let currentUser = null, uid = null, name = "", symbol = null, roomId = null;
 
-    // Funciones de autenticación
-    function login() {
-      signInWithPopup(auth, provider).catch(console.error);
-    }
-
-    function logout() {
-      signOut(auth).catch(console.error);
-    }
-
-    window.logout = logout;
+    function login() { signInWithPopup(auth, provider).catch(console.error); }
+    function logout() { signOut(auth).catch(console.error); }
     window.rematch = () => {
-      if (roomId) {
-        remove(ref(db, `rooms/${roomId}`));
-      }
+      if (roomId) remove(ref(db, `rooms/${roomId}`));
       location.reload();
     };
 
-    // Observador de estado de autenticación
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, user => {
       userArea.innerHTML = "";
       if (user) {
         currentUser = user;
         uid = user.uid;
         name = user.displayName || "Jugador";
-        
-        userArea.innerHTML = `
-          <span class="text-white me-3">${name}</span>
-          <button class="btn btn-outline-light btn-sm" onclick="logout()">Cerrar sesión</button>
-        `;
-        
+        userArea.innerHTML = `<span class="text-white me-3">${name}</span><button class="btn btn-outline-light btn-sm" onclick="logout()">Cerrar sesión</button>`;
         mainContent.style.display = "block";
       } else {
         currentUser = null;
@@ -175,27 +106,16 @@
       }
     });
 
-    // Lógica del juego
     btnFind.addEventListener("click", () => {
       btnFind.disabled = true;
       status.innerText = "Buscando partida...";
-      
       const roomsRef = ref(db, "rooms");
-      
-      onValue(roomsRef, (snapshot) => {
-        if (roomId) return; // Si ya estamos en una sala, no hacer nada
-        
+      onValue(roomsRef, snapshot => {
+        if (roomId) return;
         const rooms = snapshot.val() || {};
-        const waitingRoom = Object.entries(rooms).find(([key, room]) => room.player2 === null);
-        
-        if (waitingRoom) {
-          // Unirse a sala existente
-          [roomId] = waitingRoom;
-          joinRoom(roomId);
-        } else {
-          // Crear nueva sala
-          createRoom();
-        }
+        const waiting = Object.entries(rooms).find(([k, r]) => r.player2 === null);
+        if (waiting) { roomId = waiting[0]; joinRoom(roomId); }
+        else createRoom();
       }, { onlyOnce: true });
     });
 
@@ -203,195 +123,94 @@
       const newRoom = push(ref(db, "rooms"));
       roomId = newRoom.key;
       symbol = "X";
-      
-      set(newRoom, {
-        player1: { uid, name },
-        player2: null,
-        turn: "X",
-        board: Array(9).fill(""),
-        winner: null,
-        createdAt: Date.now()
-      });
-      
+      set(newRoom, { player1: { uid, name }, player2: null, turn: "X", board: Array(9).fill(""), winner: null });
       listenRoom();
       status.innerText = "Esperando jugador...";
-      updatePlayerInfo();
+      updatePlayerInfo({}, {});
     }
 
     function joinRoom(id) {
       const roomRef = ref(db, `rooms/${id}`);
-      
-      update(roomRef, { 
-        player2: { uid, name } 
-      });
-      
+      update(roomRef, { player2: { uid, name } });
       symbol = "O";
       roomId = id;
       listenRoom();
-      updatePlayerInfo();
+      status.innerText = "Conectando...";
+      updatePlayerInfo({}, {});
     }
 
     function listenRoom() {
       const roomRef = ref(db, `rooms/${roomId}`);
-      
-      onValue(roomRef, (snapshot) => {
+      onValue(roomRef, snapshot => {
         const room = snapshot.val();
         if (!room) {
-          // La sala fue eliminada (quizás el oponente abandonó)
-          status.innerText = "El oponente ha abandonado la partida";
+          status.innerText = "El oponente se desconectó";
           btnFind.disabled = false;
           board.innerHTML = "";
           return;
         }
-        
         const { player1, player2, turn, board: bd, winner } = room;
-        
-        // Actualizar información de jugadores
         updatePlayerInfo(player1, player2);
-        
-        if (!player2) {
-          status.innerText = "Esperando segundo jugador...";
-          return;
-        }
-        
-        // Mostrar estado del juego
-        if (winner) {
-          endGame(winner, player1, player2);
-        } else {
-          status.innerText = `Turno de ${turn === "X" ? player1.name : player2.name} (${turn})`;
+        if (!player2) { status.innerText = "Esperando segundo jugador..."; return; }
+        if (winner) { endGame(winner, player1, player2); }
+        else {
+          status.innerText = `Turno de ${(turn === "X") ? player1.name : player2.name} (${turn})`;
           drawBoard(bd, turn);
         }
       });
     }
 
-    function updatePlayerInfo(player1, player2) {
-      if (player1) {
-        playerXName.textContent = player1.name;
-        playerXInfo.classList.toggle("fw-bold", symbol === "X");
-      }
-      
-      if (player2) {
-        playerOName.textContent = player2.name;
-        playerOInfo.classList.toggle("fw-bold", symbol === "O");
-      }
+    function updatePlayerInfo(p1 = {}, p2 = {}) {
+      playerXName.textContent = p1.name || "-";
+      playerOName.textContent = p2.name || "-";
     }
 
     function drawBoard(bd, turn) {
       board.innerHTML = "";
-      
-      for (let i = 0; i < 3; i++) {
-        const row = document.createElement("div");
-        row.className = "row";
-        
-        for (let j = 0; j < 3; j++) {
-          const idx = 3 * i + j;
-          const btn = document.createElement("button");
-          btn.className = "btn btn-outline-dark cell m-1";
-          btn.innerText = bd[idx];
-          
-          // Resaltar celdas ganadoras si las hay
-          if (bd[idx] === "X") {
-            btn.classList.add("player-x");
-          } else if (bd[idx] === "O") {
-            btn.classList.add("player-o");
-          }
-          
-          // Permitir movimiento solo si es el turno del jugador y la celda está vacía
-          if (!bd[idx] && turn === symbol) {
-            btn.addEventListener("click", () => makeMove(idx));
-            btn.style.cursor = "pointer";
-          } else {
-            btn.style.cursor = "default";
-          }
-          
-          row.appendChild(btn);
-        }
-        
-        board.appendChild(row);
-      }
+      bd.forEach((v, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "btn btn-outline-dark cell m-1";
+        btn.innerText = v;
+        if (v === "X") btn.classList.add("player-x");
+        else if (v === "O") btn.classList.add("player-o");
+        if (!v && turn === symbol) {
+          btn.addEventListener("click", () => makeMove(idx));
+          btn.style.cursor = "pointer";
+        } else btn.style.cursor = "default";
+        const row = board.children[Math.floor(idx/3)];
+        if (!row) {
+          const r = document.createElement("div"); r.className = "row"; board.appendChild(r); r.appendChild(btn);
+        } else row.appendChild(btn);
+      });
     }
 
     function makeMove(idx) {
       const roomRef = ref(db, `rooms/${roomId}`);
-      
-      onValue(roomRef, (snapshot) => {
-        const room = snapshot.val();
-        if (!room) return;
-        
-        const { turn, board: bd, winner } = room;
-        
-        // Validar movimiento
-        if (bd[idx] || turn !== symbol || winner) return;
-        
-        // Actualizar tablero
-        const newBoard = [...bd];
-        newBoard[idx] = symbol;
-        
-        // Verificar si hay ganador
-        const newWinner = checkWin(newBoard);
-        const nextTurn = turn === "X" ? "O" : "X";
-        
-        // Actualizar sala
-        update(roomRef, { 
-          board: newBoard, 
-          turn: nextTurn, 
-          winner: newWinner 
-        });
-        
-        // Guardar resultado si hay ganador
-        if (newWinner) {
-          saveResult(newWinner);
-        }
+      onValue(roomRef, snapshot => {
+        const room = snapshot.val(); if (!room) return;
+        if (room.board[idx] || room.turn !== symbol || room.winner) return;
+        const newB = [...room.board];
+        newB[idx] = symbol;
+        const win = checkWin(newB);
+        update(roomRef, { board: newB, turn: (room.turn === "X"?"O":"X"), winner: win });
+        if (win) saveResult(win);
       }, { onlyOnce: true });
     }
 
     function checkWin(b) {
-      const lines = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8], // filas
-        [0, 3, 6], [1, 4, 7], [2, 5, 8], // columnas
-        [0, 4, 8], [2, 4, 6]             // diagonales
-      ];
-      
-      for (const [a, b1, c] of lines) {
-        if (b[a] && b[a] === b[b1] && b[a] === b[c]) {
-          return b[a]; // Retorna 'X' o 'O' si hay ganador
-        }
-      }
-      
-      // Si no hay ganador, verificar empate
-      return b.includes("") ? null : "T"; // 'T' para empate
+      const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+      for (const [a,b2,c] of lines) if (b[a] && b[a]===b[b2]&&b[a]===b[c]) return b[a];
+      return b.includes("")? null: "T";
     }
 
-    function endGame(winner, player1, player2) {
-      gameActive = false;
-      
-      if (winner === "T") {
-        resultText.textContent = "¡Empate!";
-      } else {
-        const winnerName = winner === "X" ? player1.name : player2.name;
-        const isWinner = winner === symbol;
-        
-        resultText.textContent = isWinner 
-          ? "¡Ganaste! 🎉" 
-          : `¡Perdiste! ${winnerName} ganó.`;
-      }
-      
+    function endGame(winner, p1, p2) {
+      resultText.textContent = winner==="T" ? "¡Empate!" : (winner===symbol ? "¡Ganaste! 🎉" : `¡Perdiste! ${(winner==="X"?p1.name:p2.name)} ganó.`);
       resultModal.show();
     }
 
     function saveResult(winner) {
-      const result = winner === "T" ? "draw" : (winner === symbol ? "win" : "lose");
       const historyRef = ref(db, `history/${uid}`);
-      
-      const record = {
-        roomId,
-        result,
-        opponent: symbol === "X" ? playerOName.textContent : playerXName.textContent,
-        date: Date.now(),
-        symbol
-      };
-      
-      push(historyRef, record);
+      push(historyRef, { roomId, result: winner==="T"?"draw":(winner===symbol?"win":"lose"), opponent: (symbol==="X"?playerOName.textContent:playerXName.textContent), date: Date.now(), symbol });
     }
   </script>
 
