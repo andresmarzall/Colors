@@ -2,55 +2,179 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Chat en segundo plano</title>
+  <title>Chat en tiempo real</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
   <style>
-    .user-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-    .chat-message { white-space: pre-wrap; }
-    .incoming { background: #f1f1f1; padding: 5px; border-radius: 4px; margin-bottom: 5px; }
-    .outgoing { background: #d1e7dd; padding: 5px; border-radius: 4px; margin-bottom: 5px; text-align: right; }
-    .typing-indicator { font-style: italic; font-size: 0.9em; color: #666; }
+    body {
+      background-color: #f8f9fa;
+    }
+    .chat-container {
+      max-width: 800px;
+      margin: 0 auto;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .user-avatar {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .chat-message {
+      padding: 10px 15px;
+      border-radius: 18px;
+      max-width: 70%;
+      word-wrap: break-word;
+      margin-bottom: 8px;
+      position: relative;
+      animation: fadeIn 0.3s ease;
+    }
+    .incoming {
+      background-color: #ffffff;
+      border: 1px solid #e5e5ea;
+      align-self: flex-start;
+    }
+    .outgoing {
+      background-color: #007bff;
+      color: white;
+      align-self: flex-end;
+    }
+    .message-time {
+      font-size: 0.7em;
+      opacity: 0.7;
+      margin-top: 3px;
+      display: block;
+    }
+    .typing-indicator {
+      padding: 10px;
+      background-color: #f1f1f1;
+      border-radius: 15px;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+    .user-list-item {
+      transition: all 0.2s;
+      cursor: pointer;
+      position: relative;
+    }
+    .user-list-item:hover {
+      background-color: #f8f9fa;
+      transform: translateX(5px);
+    }
+    .unread-badge {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .online-status {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #28a745;
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      border: 2px solid white;
+    }
+    .chat-header {
+      background-color: #007bff;
+      color: white;
+      padding: 15px;
+      border-radius: 10px 10px 0 0;
+    }
+    .chat-body {
+      height: 400px;
+      overflow-y: auto;
+      padding: 15px;
+      background-color: #f9f9f9;
+    }
+    .chat-footer {
+      padding: 15px;
+      background-color: #fff;
+      border-radius: 0 0 10px 10px;
+      border-top: 1px solid #eee;
+    }
+    .emoji-picker {
+      position: absolute;
+      bottom: 60px;
+      right: 20px;
+      z-index: 1000;
+    }
+    .message-status {
+      font-size: 0.6em;
+      margin-left: 5px;
+    }
   </style>
 </head>
 <body class="bg-light">
 
 <div class="container py-4">
   <div id="loginView" class="text-center">
-    <h1 class="mb-4">Chat en segundo plano</h1>
-    <button id="btnLoginGoogle" class="btn btn-danger">
-      <i class="bi bi-google"></i> Iniciar sesión con Google
-    </button>
+    <div class="card shadow-sm mx-auto" style="max-width: 400px;">
+      <div class="card-body p-5">
+        <img src="https://via.placeholder.com/100" alt="Logo" class="mb-4 rounded-circle">
+        <h1 class="mb-4">Chat App</h1>
+        <button id="btnLoginGoogle" class="btn btn-danger w-100 py-2">
+          <i class="bi bi-google"></i> Iniciar sesión con Google
+        </button>
+      </div>
+    </div>
   </div>
 
   <div id="dashboardView" class="d-none">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h3>Usuarios registrados</h3>
-      <div>
-        <img id="currentUserAvatar" class="user-avatar me-2" src="">
-        <button id="btnLogout" class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="mb-0">Usuarios</h3>
+        <div class="d-flex align-items-center">
+          <img id="currentUserAvatar" class="user-avatar me-2" src="">
+          <button id="btnLogout" class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="input-group p-3">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" id="userSearch" class="form-control" placeholder="Buscar usuarios...">
+        </div>
+        <ul id="userList" class="list-group list-group-flush"></ul>
       </div>
     </div>
-    <ul id="userList" class="list-group"></ul>
   </div>
 </div>
-
 <!-- Chat Modal -->
 <div class="modal fade" id="chatModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-scrollable">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 id="chatModalLabel" class="modal-title">Chat</h5>
+      <div class="modal-header align-items-center">
+        <div class="d-flex align-items-center">
+          <img id="chatUserAvatar" class="user-avatar me-2" src="">
+          <div>
+            <h5 id="chatModalLabel" class="modal-title mb-0"></h5>
+            <small id="userStatus" class="text-muted"></small>
+          </div>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
-        <div id="chatMessages" class="mb-2" style="max-height: 300px; overflow-y: auto;"></div>
-        <div id="typingIndicator" class="typing-indicator"></div>
-        <form id="chatForm">
+      <div class="modal-body p-0">
+        <div id="chatMessages" class="chat-body"></div>
+        <div id="typingIndicator" class="typing-indicator ms-3"></div>
+      </div>
+      <div class="modal-footer">
+        <form id="chatForm" class="w-100">
           <div class="input-group">
-            <input type="text" id="chatInput" class="form-control" placeholder="Mensaje..." required autocomplete="off">
-            <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i></button>
+            <button type="button" id="btnEmoji" class="btn btn-outline-secondary">
+              <i class="bi bi-emoji-smile"></i>
+            </button>
+            <input type="text" id="chatInput" class="form-control" placeholder="Escribe un mensaje..." required>
+            <button class="btn btn-primary" type="submit">
+              <i class="bi bi-send"></i>
+            </button>
           </div>
         </form>
       </div>
@@ -58,13 +182,11 @@
   </div>
 </div>
 
+<!-- Firebase & App -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-  // Base64 “ding” short sound
-  const dingSound = "data:audio/wav;base64,UklGRhQAAABXQVZFZm10IBIAAAABAAEAgD4AAAB9AAACABAAZGF0YQAAAAA=";
+  import { getDatabase, ref, onValue, set, push, update, off, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
@@ -82,118 +204,413 @@
   const db = getDatabase(app);
   const provider = new GoogleAuthProvider();
 
+  // Elementos del DOM
   const loginView = document.getElementById('loginView');
   const dashboardView = document.getElementById('dashboardView');
   const btnLoginGoogle = document.getElementById('btnLoginGoogle');
   const btnLogout = document.getElementById('btnLogout');
+  const userSearch = document.getElementById('userSearch');
   const userList = document.getElementById('userList');
   const currentUserAvatar = document.getElementById('currentUserAvatar');
   const chatModal = new bootstrap.Modal(document.getElementById('chatModal'));
   const chatModalLabel = document.getElementById('chatModalLabel');
+  const chatUserAvatar = document.getElementById('chatUserAvatar');
   const chatMessages = document.getElementById('chatMessages');
-  const typingIndicator = document.getElementById('typingIndicator');
   const chatForm = document.getElementById('chatForm');
   const chatInput = document.getElementById('chatInput');
+  const typingIndicator = document.getElementById('typingIndicator');
+  const userStatus = document.getElementById('userStatus');
+  const btnEmoji = document.getElementById('btnEmoji');
 
+  // Variables de estado
   let currentUser = null;
-  let currentChatUser = null, chatId = null;
+  let currentChatUser = null;
+  let typingTimeout = null;
+  let userListeners = {};
+  let chatListeners = {};
 
-  btnLoginGoogle.onclick = () => signInWithPopup(auth, provider).catch(() => alert("Fallo login"));
-  btnLogout.onclick = () => signOut(auth);
+  // Inicialización
+  btnLoginGoogle.addEventListener('click', async () => {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (e) {
+      console.error("Error al iniciar sesión:", e);
+      showAlert('Error al iniciar sesión', 'danger');
+    }
+  });
 
-  onAuthStateChanged(auth, user => {
+  btnLogout.addEventListener('click', () => {
+    // Limpiar listeners antes de cerrar sesión
+    cleanupListeners();
+    signOut(auth);
+  });
+
+  // Observador de estado de autenticación
+  onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUser = user;
       loginView.classList.add('d-none');
       dashboardView.classList.remove('d-none');
-      currentUserAvatar.src = user.photoURL;
+      currentUserAvatar.src = user.photoURL || 'https://via.placeholder.com/45';
 
-      set(ref(db, `users/${user.uid}`), {
-        name: user.displayName,
-        email: user.email,
-        photo: user.photoURL
-      });
-
+      // Actualizar información del usuario en la base de datos
+      await updateUserStatus('online');
+      
+      // Cargar lista de usuarios
       loadUsers();
+      
+      // Configurar búsqueda
+      setupSearch();
     } else {
+      currentUser = null;
       loginView.classList.remove('d-none');
       dashboardView.classList.add('d-none');
     }
   });
 
+  // Funciones principales
+  async function updateUserStatus(status) {
+    if (!currentUser) return;
+    
+    const userRef = ref(db, `users/${currentUser.uid}`);
+    await set(userRef, {
+      uid: currentUser.uid,
+      name: currentUser.displayName,
+      email: currentUser.email,
+      photo: currentUser.photoURL || 'https://via.placeholder.com/45',
+      status: status,
+      lastSeen: status === 'online' ? null : Date.now()
+    });
+    
+    // Configurar estado offline cuando el usuario cierre la pestaña
+    onDisconnect(userRef).update({
+      status: 'offline',
+      lastSeen: Date.now()
+    });
+  }
+
   function loadUsers() {
-    onValue(ref(db, 'users'), snap => {
+    // Limpiar listeners anteriores
+    if (userListeners.users) {
+      off(userListeners.users);
+    }
+    
+    const usersRef = ref(db, 'users');
+    userListeners.users = onValue(usersRef, (snapshot) => {
       userList.innerHTML = '';
-      snap.forEach(child => {
-        const u = child.val(), uid = child.key;
-        if (uid === currentUser.uid) return;
+      const users = [];
+      
+      snapshot.forEach(child => {
+        const user = child.val();
+        if (user.uid === currentUser.uid) return;
+        users.push(user);
+      });
+ // Ordenar usuarios: primero los en línea, luego por último visto
+      users.sort((a, b) => {
+        if (a.status === 'online' && b.status !== 'online') return -1;
+        if (a.status !== 'online' && b.status === 'online') return 1;
+        return (b.lastSeen || 0) - (a.lastSeen || 0);
+      });
+      
+      // Mostrar usuarios en la lista
+      users.forEach(user => {
         const li = document.createElement('li');
-        li.className = "list-group-item list-group-item-action d-flex align-items-center";
-        li.innerHTML = `<img src="${u.photo}" class="user-avatar me-2"><span>${u.name}</span>`;
-        li.onclick = () => openChat(uid, u);
+        li.className = "list-group-item user-list-item d-flex align-items-center";
+        
+        // Contador de mensajes no leídos
+        const unreadCount = user.unread && user.unread[currentUser.uid] ? user.unread[currentUser.uid].count : 0;
+        
+        li.innerHTML = `
+          <div class="position-relative me-2">
+            <img src="${user.photo}" class="user-avatar">
+            ${user.status === 'online' ? '<span class="online-status"></span>' : ''}
+          </div>
+          <div class="flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center">
+              <strong>${user.name}</strong>
+              <small class="text-muted">${formatLastSeen(user.lastSeen, user.status)}</small>
+            </div>
+            <small class="text-muted text-truncate d-block" style="max-width: 200px;">
+              ${unreadCount ? `<strong>${user.unread[currentUser.uid].lastMessage || ''}</strong>` : ''}
+            </small>
+          </div>
+          ${unreadCount ? `<span class="unread-badge badge bg-primary rounded-pill">${unreadCount}</span>` : ''}
+        `;
+        
+        li.addEventListener('click', () => openChat(user));
         userList.appendChild(li);
       });
     });
   }
 
-  function openChat(uid, u) {
-    currentChatUser = u;
-    chatId = [currentUser.uid, uid].sort().join('_');
-    chatModalLabel.textContent = `Chat con ${u.name}`;
-    chatMessages.innerHTML = '';
-    typingIndicator.textContent = '';
-    chatModal.show();
+  function formatLastSeen(timestamp, status) {
+    if (status === 'online') return 'En línea';
+    if (!timestamp) return '';
+    
+    const now = Date.now();
+    const diff = now - timestamp;
+    const minutes = Math.floor(diff / (1000 * 60));
+    
+    if (minutes < 1) return 'Recién';
+    if (minutes < 60) return `Hace ${minutes} min`;
+    if (minutes < 1440) return `Hace ${Math.floor(minutes / 60)} h`;
+    return `Hace ${Math.floor(minutes / 1440)} d`;
+  }
 
-    onValue(ref(db, `chats/${chatId}`), snap => {
-      chatMessages.innerHTML = '';
-      snap.forEach(child => {
-        const m = child.val();
-        const div = document.createElement('div');
-        div.className = "chat-message " + (m.from === currentUser.uid ? 'outgoing' : 'incoming');
-        div.textContent = m.text;
-        chatMessages.appendChild(div);
+  function setupSearch() {
+    userSearch.addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      Array.from(userList.children).forEach(userItem => {
+        const userName = userItem.textContent.toLowerCase();
+        userItem.style.display = userName.includes(searchTerm) ? 'flex' : 'none';
       });
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    });
-
-    onValue(ref(db, `typing/${chatId}/${uid}`), snap => {
-      typingIndicator.textContent = snap.val() ? `${u.name} está escribiendo...` : '';
-    });
-
-    // listener para notificación
-    onValue(ref(db, `chats/${chatId}`), snap => {
-      let last = null;
-      snap.forEach(child => last = child.val());
-      if (last && last.from !== currentUser.uid) {
-        const notif = new Notification(`Mensaje de ${u.name}`, { body: last.text });
-        const audio = new Audio(dingSound);
-        audio.play();
-      }
     });
   }
 
-  chatInput.oninput = () => {
-    if (!chatId) return;
-    update(ref(db, `typing/${chatId}/${currentUser.uid}`), true);
-    clearTimeout(window.__typingTimeout);
-    window.__typingTimeout = setTimeout(() => {
-      update(ref(db, `typing/${chatId}/${currentUser.uid}`), null);
-    }, 1500);
-  };
+  function openChat(user) {
+    currentChatUser = user;
+    
+    // Actualizar UI del modal
+    chatUserAvatar.src = user.photo;
+    chatModalLabel.textContent = user.name;
+    userStatus.textContent = user.status === 'online' ? 'En línea' : formatLastSeen(user.lastSeen, user.status);
+    chatMessages.innerHTML = '';
+    typingIndicator.textContent = '';
+    
+    // Mostrar modal
+    chatModal.show();
+    
+    // Configurar chatId (ordenamos los IDs para tener siempre el mismo chatId para la misma pareja)
+    const chatId = [currentUser.uid, user.uid].sort().join('_');
+    
+    // Limpiar listener anterior si existe
+    if (chatListeners[chatId]) {
+      off(chatListeners[chatId]);
+    }
+    
+    // Escuchar mensajes
+    const messagesRef = ref(db, `chats/${chatId}`);
+    chatListeners[chatId] = onValue(messagesRef, (snapshot) => {
+      chatMessages.innerHTML = '';
+      const messages = [];
+      
+      snapshot.forEach(child => {
+        messages.push({
+          id: child.key,
+          ...child.val()
+        });
+      });
+      
+      // Ordenar mensajes por fecha
+      messages.sort((a, b) => a.createdAt - b.createdAt);
+      
+      // Mostrar mensajes
+      messages.forEach(msg => {
+        const isOutgoing = msg.from === currentUser.uid;
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `d-flex flex-column ${isOutgoing ? 'align-items-end' : 'align-items-start'}`;
+        
+        messageDiv.innerHTML = `
+          <div class="chat-message ${isOutgoing ? 'outgoing' : 'incoming'} animate__animated animate__fadeIn">
+            ${msg.text}
+            <span class="message-time">${formatTime(msg.createdAt)}</span>
+          </div>
+        `;
+        
+        chatMessages.appendChild(messageDiv);
+      });
+      
+      // Auto-scroll al final
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      
+      // Marcar mensajes como leídos
+      if (messages.length > 0) {
+        markMessagesAsRead(chatId);
+      }
+    });
+    
+    // Escuchar estado de "escribiendo"
+    const typingRef = ref(db, `typing/${user.uid}`);
+    onValue(typingRef, (snapshot) => {
+      const typingUserId = snapshot.val();
+      typingIndicator.textContent = typingUserId === currentUser.uid ? `${user.name} está escribiendo...` : '';
+    });
+  }
 
-  chatForm.onsubmit = async e => {
+  function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function markMessagesAsRead(chatId) {
+    // Actualizar contador de mensajes no leídos
+    const unreadRef = ref(db, `unread/${chatId}/${currentUser.uid}`);
+    set(unreadRef, {
+      count: 0,
+      lastMessage: null,
+      timestamp: null
+    });
+    
+    // Marcar mensajes como leídos
+    const messagesRef = ref(db, `chats/${chatId}`);
+    update(messagesRef, {
+      read: true
+    });
+  }
+ // Eventos del chat
+  chatForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!chatId || !chatInput.value.trim()) return;
     const text = chatInput.value.trim();
-    await push(ref(db, `chats/${chatId}`), {
+    if (!text || !currentChatUser) return;
+    
+    const chatId = [currentUser.uid, currentChatUser.uid].sort().join('_');
+    const messageRef = push(ref(db, `chats/${chatId}`));
+    
+    const messageData = {
       from: currentUser.uid,
       to: currentChatUser.uid,
-      text,
-      createdAt: Date.now()
+      senderName: currentUser.displayName,
+      text: text,
+      createdAt: Date.now(),
+      read: false
+    };
+    
+    await set(messageRef, messageData);
+    
+    // Actualizar contador de mensajes no leídos para el receptor
+    const unreadRef = ref(db, `unread/${chatId}/${currentChatUser.uid}`);
+    update(unreadRef, {
+      count: increment(1),
+      lastMessage: text.length > 30 ? text.substring(0, 30) + '...' : text,
+      timestamp: Date.now()
     });
+    
+    // Notificación simple (sin Firebase Messaging)
+    if (Notification.permission === 'granted' && document.hidden) {
+      new Notification(`Nuevo mensaje de ${currentUser.displayName}`, {
+        body: text,
+        icon: currentUser.photoURL
+      });
+    }
+    
+    // Limpiar input y estado de "escribiendo"
     chatInput.value = '';
-    update(ref(db, `typing/${chatId}/${currentUser.uid}`), null);
-  };
+    await set(ref(db, `typing/${currentUser.uid}`), null);
+  });
+
+  chatInput.addEventListener('input', () => {
+    if (currentChatUser) {
+      set(ref(db, `typing/${currentChatUser.uid}`), currentUser.uid);
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        set(ref(db, `typing/${currentChatUser.uid}`), null);
+      }, 1500);
+    }
+  });
+
+  // Configurar emojis
+  btnEmoji.addEventListener('click', () => {
+    // Implementación básica de selector de emojis
+    const emojis = ['😀', '😂', '😍', '👍', '👋', '❤️', '🔥', '🎉'];
+    const picker = document.createElement('div');
+    picker.className = 'emoji-picker bg-white border rounded p-2 shadow';
+    picker.style.display = 'grid';
+    picker.style.gridTemplateColumns = 'repeat(4, 1fr)';
+    picker.style.gap = '5px';
+    
+    emojis.forEach(emoji => {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-sm';
+      btn.textContent = emoji;
+      btn.addEventListener('click', () => {
+        chatInput.value += emoji;
+        chatInput.focus();
+        picker.remove();
+      });
+      picker.appendChild(btn);
+    });
+    
+    document.body.appendChild(picker);
+    
+    // Cerrar picker al hacer clic fuera
+    setTimeout(() => {
+      const closePicker = (e) => {
+        if (!picker.contains(e.target) && e.target !== btnEmoji) {
+          picker.remove();
+          document.removeEventListener('click', closePicker);
+        }
+      };
+      document.addEventListener('click', closePicker);
+    }, 0);
+  });
+
+  // Notificaciones del navegador
+  function requestNotificationPermission() {
+    if (!('Notification' in window)) {
+      console.log('Este navegador no soporta notificaciones');
+      return;
+    }
+    
+    if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission().then(permission => {
+        console.log('Permiso de notificación:', permission);
+      });
+    }
+  }
+
+  // Mostrar alertas
+  function showAlert(message, type = 'success') {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alert.style.top = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+      alert.classList.remove('show');
+      setTimeout(() => alert.remove(), 150);
+    }, 3000);
+  }
+
+  // Limpiar listeners al cerrar
+  function cleanupListeners() {
+    // Limpiar listeners de usuarios
+    Object.values(userListeners).forEach(listener => {
+      if (listener) off(listener);
+    });
+    
+    // Limpiar listeners de chats
+    Object.values(chatListeners).forEach(listener => {
+      if (listener) off(listener);
+    });
+    
+    // Actualizar estado a offline
+    if (currentUser) {
+      updateUserStatus('offline');
+    }
+  }
+
+  // Inicializar notificaciones cuando la página carga
+  window.addEventListener('load', () => {
+    requestNotificationPermission();
+  });
+
+  // Actualizar estado cuando la pestaña gana/piere foco
+  document.addEventListener('visibilitychange', () => {
+    if (currentUser) {
+      if (document.hidden) {
+        updateUserStatus('away');
+      } else {
+        updateUserStatus('online');
+      }
+    }
+  });
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
