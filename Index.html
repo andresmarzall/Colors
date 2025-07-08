@@ -8,7 +8,6 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
     .user-active { background-color: #e8f5e9; }
-    .user-inactive { background-color: #ffebee; }
     .call-modal {
       text-align: center;
       padding: 20px;
@@ -34,17 +33,21 @@
       75% { transform: rotate(-15deg); }
       100% { transform: rotate(0); }
     }
+    #chatMessages {
+      height: 300px;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body class="bg-light">
   <div class="container py-4">
     <!-- Vista de Login -->
     <div id="loginView" class="row justify-content-center">
-      <div class="col-md-6">
+      <div class="col-md-6 col-lg-4">
         <div class="card shadow">
           <div class="card-body text-center p-5">
             <h2 class="mb-4">Chat con Llamadas</h2>
-            <button id="btnLogin" class="btn btn-primary btn-lg">
+            <button id="btnLogin" class="btn btn-danger btn-lg w-100">
               <i class="bi bi-google"></i> Ingresar con Google
             </button>
           </div>
@@ -55,8 +58,11 @@
     <!-- Vista Principal -->
     <div id="appView" class="d-none">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-people-fill"></i> Usuarios Activos</h2>
-        <button id="btnLogout" class="btn btn-outline-danger">Salir</button>
+        <h2><i class="bi bi-people-fill"></i> Usuarios</h2>
+        <div>
+          <img id="userAvatar" src="" class="rounded-circle me-2" width="40" height="40">
+          <button id="btnLogout" class="btn btn-outline-danger">Salir</button>
+        </div>
       </div>
       
       <div class="card shadow mb-4">
@@ -75,7 +81,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <div id="chatMessages" style="height: 300px; overflow-y: auto;"></div>
+            <div id="chatMessages"></div>
             <form id="chatForm" class="mt-3">
               <div class="input-group">
                 <input type="text" id="messageInput" class="form-control" placeholder="Escribe un mensaje...">
@@ -123,21 +129,24 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module">
+    // Importaciones Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getDatabase, ref, set, push, onValue, onDisconnect, remove, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     // Configuración Firebase
     const firebaseConfig = {
-      apiKey: "TU_API_KEY",
-      authDomain: "TU_DOMINIO.firebaseapp.com",
-      databaseURL: "https://TU_PROYECTO.firebaseio.com",
-      projectId: "TU_PROYECTO",
-      storageBucket: "TU_PROYECTO.appspot.com",
-      messagingSenderId: "TU_SENDER_ID",
-      appId: "TU_APP_ID"
+      apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
+      authDomain: "llamapp-c8d6c.firebaseapp.com",
+      databaseURL: "https://llamapp-c8d6c-default-rtdb.firebaseio.com",
+      projectId: "llamapp-c8d6c",
+      storageBucket: "llamapp-c8d6c.firebasestorage.app",
+      messagingSenderId: "132119278171",
+      appId: "1:132119278171:web:d11d942c8dc2f4ed9a057e",
+      measurementId: "G-4VN80ZMS5L"
     };
 
+    // Inicializar Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
@@ -148,9 +157,11 @@
     const appView = document.getElementById('appView');
     const btnLogin = document.getElementById('btnLogin');
     const btnLogout = document.getElementById('btnLogout');
+    const userAvatar = document.getElementById('userAvatar');
     const usersList = document.getElementById('usersList');
     const chatModal = new bootstrap.Modal('#chatModal');
     const callModal = new bootstrap.Modal('#callModal');
+    const chatTitle = document.getElementById('chatTitle');
     const chatMessages = document.getElementById('chatMessages');
     const messageInput = document.getElementById('messageInput');
     const chatForm = document.getElementById('chatForm');
@@ -182,15 +193,32 @@
       ]
     };
 
-    // Eventos de autenticación
-    btnLogin.addEventListener('click', () => signInWithPopup(auth, provider));
-    btnLogout.addEventListener('click', () => signOut(auth));
+    // Iniciar sesión con Google
+    btnLogin.addEventListener('click', async () => {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        console.error("Error al iniciar sesión:", error);
+        alert("Error al iniciar sesión: " + error.message);
+      }
+    });
 
+    // Cerrar sesión
+    btnLogout.addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.error("Error al cerrar sesión:", error);
+      }
+    });
+
+    // Observar estado de autenticación
     onAuthStateChanged(auth, (user) => {
       if (user) {
         currentUser = user;
         loginView.classList.add('d-none');
         appView.classList.remove('d-none');
+        userAvatar.src = user.photoURL;
         setupPresence();
         loadUsers();
         setupCallListener();
@@ -201,16 +229,19 @@
       }
     });
 
-    // Configurar presencia
+    // Configurar presencia del usuario
     function setupPresence() {
       const userStatusRef = ref(db, `presence/${currentUser.uid}`);
+      
+      // Establecer estado online
       set(userStatusRef, {
         name: currentUser.displayName,
         photo: currentUser.photoURL,
-        lastOnline: Date.now(),
-        status: 'online'
+        status: 'online',
+        lastOnline: Date.now()
       });
       
+      // Limpiar al desconectarse
       onDisconnect(userStatusRef).remove();
     }
 
@@ -226,7 +257,7 @@
           
           if (uid !== currentUser.uid) {
             const li = document.createElement('li');
-            li.className = `list-group-item list-group-item-action ${user.status === 'online' ? 'user-active' : 'user-inactive'}`;
+            li.className = `list-group-item list-group-item-action ${user.status === 'online' ? 'user-active' : ''}`;
             li.innerHTML = `
               <div class="d-flex align-items-center">
                 <img src="${user.photo}" class="rounded-circle me-3" width="40" height="40">
@@ -247,28 +278,18 @@
     // Abrir chat con usuario
     function openChat(uid, name, photo) {
       currentChat = { uid, name, photo };
-      document.getElementById('chatTitle').textContent = `Chat con ${name}`;
+      chatTitle.textContent = `Chat con ${name}`;
       chatMessages.innerHTML = '';
       
       // Cargar mensajes
-      const chatId = [currentUser.uid, uid].sort().join('_');
+      const chatId = generateChatId(currentUser.uid, uid);
       const messagesRef = ref(db, `chats/${chatId}`);
       
       onValue(messagesRef, (snapshot) => {
         chatMessages.innerHTML = '';
         snapshot.forEach((childSnapshot) => {
           const message = childSnapshot.val();
-          const messageDiv = document.createElement('div');
-          messageDiv.className = `mb-2 ${message.from === currentUser.uid ? 'text-end' : 'text-start'}`;
-          messageDiv.innerHTML = `
-            <span class="badge ${message.from === currentUser.uid ? 'bg-primary' : 'bg-secondary'}">
-              ${message.text}
-            </span>
-            <div class="small text-muted">
-              ${new Date(message.createdAt).toLocaleTimeString()}
-            </div>
-          `;
-          chatMessages.appendChild(messageDiv);
+          displayMessage(message);
         });
         
         // Scroll al final
@@ -278,13 +299,33 @@
       chatModal.show();
     }
 
+    // Generar ID de chat
+    function generateChatId(uid1, uid2) {
+      return [uid1, uid2].sort().join('_');
+    }
+
+    // Mostrar mensaje en el chat
+    function displayMessage(message) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `mb-2 ${message.from === currentUser.uid ? 'text-end' : 'text-start'}`;
+      messageDiv.innerHTML = `
+        <span class="badge ${message.from === currentUser.uid ? 'bg-primary' : 'bg-secondary'}">
+          ${message.text}
+        </span>
+        <div class="small text-muted">
+          ${new Date(message.createdAt).toLocaleTimeString()}
+        </div>
+      `;
+      chatMessages.appendChild(messageDiv);
+    }
+
     // Enviar mensaje
     chatForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const text = messageInput.value.trim();
       
       if (text && currentChat) {
-        const chatId = [currentUser.uid, currentChat.uid].sort().join('_');
+        const chatId = generateChatId(currentUser.uid, currentChat.uid);
         const messagesRef = ref(db, `chats/${chatId}`);
         
         push(messagesRef, {
@@ -330,7 +371,7 @@
       ringtone.play();
       callModal.show();
       
-      // Timeout para llamada no contestada
+      // Timeout para llamada no contestada (30 segundos)
       setTimeout(() => {
         if (callModal._isShown && !peerConnection) {
           endCall();
