@@ -81,7 +81,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getDatabase, ref, set, onValue, onDisconnect, remove, update, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, set, onValue, onDisconnect, remove, update, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
@@ -227,7 +227,7 @@
         peerConnection.onicecandidate = event => {
           if (event.candidate) {
             const callRef = ref(db, `calls/${currentCallId}/callerCandidates`);
-            set(push(callRef), event.candidate.toJSON());
+            push(callRef, event.candidate.toJSON());
           }
         };
         
@@ -269,15 +269,16 @@
           });
         });
 
-        // Create offer
+        // Create offer - CORRECCIÓN PRINCIPAL AQUÍ
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offer);
-        await update(callRef, { offer: offer.toJSON() });
+        await update(callRef, { offer: offer }); // Cambiado de offer.toJSON() a offer directamente
 
         // Update UI
         callStatus.textContent = `Llamando a ${targetName}...`;
         callTimer.textContent = "00:00";
         callModal.show();
+        startCallTimer();
         
       } catch (error) {
         console.error("Error starting call:", error);
@@ -307,7 +308,7 @@
             // Setup accept/reject handlers
             btnAcceptCall.onclick = async () => {
               ringtone.pause();
-              await acceptCall(callId, callData.from);
+              await acceptCall(callId, callData.fromName);
               incomingCallModal.hide();
             };
             
@@ -322,7 +323,7 @@
       });
     }
 
-    async function acceptCall(callId, callerId) {
+    async function acceptCall(callId, callerName) {
       try {
         // Get user media
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -336,7 +337,7 @@
         peerConnection.onicecandidate = event => {
           if (event.candidate) {
             const callRef = ref(db, `calls/${callId}/calleeCandidates`);
-            set(push(callRef), event.candidate.toJSON());
+            push(callRef, event.candidate.toJSON());
           }
         };
         
@@ -359,7 +360,7 @@
             // Create answer
             const answer = await peerConnection.createAnswer();
             await peerConnection.setLocalDescription(answer);
-            await update(callRef, { answer: answer.toJSON() });
+            await update(callRef, { answer: answer }); // Cambiado de answer.toJSON() a answer
           }
         });
 
@@ -371,7 +372,7 @@
         });
 
         // Update UI
-        callStatus.textContent = `En llamada con ${callerId === currentUser.uid ? 'tú mismo' : callerId}`;
+        callStatus.textContent = `En llamada con ${callerName}`;
         callTimer.textContent = "00:00";
         callModal.show();
         startCallTimer();
