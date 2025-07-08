@@ -4,12 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chat 1 a 1 - Firebase</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"/>
 </head>
 <body class="bg-light">
   <div class="container py-4">
-    <!-- Alert container -->
     <div id="alertContainer"></div>
 
     <!-- Login View -->
@@ -18,7 +17,7 @@
         <div class="card shadow">
           <div class="card-body text-center p-5">
             <h2 class="mb-4">Chat App</h2>
-            <p class="text-muted mb-4">Entra con Google</p>
+            <p class="text-muted mb-4">Ingresa con Google</p>
             <button id="btnLoginGoogle" class="btn btn-danger btn-lg w-100">
               <i class="bi bi-google"></i> Continuar con Google
             </button>
@@ -30,7 +29,7 @@
     <!-- Dashboard View -->
     <div id="dashboardView" class="d-none">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-chat-dots"></i> Usuarios conectados</h2>
+        <h2><i class="bi bi-chat-dots"></i> Usuarios</h2>
         <div>
           <img id="userAvatar" src="" class="rounded-circle me-2" width="40" height="40">
           <button id="btnLogout" class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
@@ -44,13 +43,16 @@
       <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 id="chatModalLabel" class="modal-title">Chat</h5>
+            <div>
+              <h5 id="chatModalLabel" class="modal-title mb-0">Chat</h5>
+              <small id="typingStatus" class="text-muted"></small>
+            </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
             <div id="chatHistory" class="mb-3" style="max-height: 400px; overflow-y: auto;"></div>
             <form id="chatForm" class="d-flex">
-              <input id="chatInput" class="form-control me-2" placeholder="Escribe un mensaje..." required />
+              <input id="chatInput" class="form-control me-2" placeholder="Escribe un mensaje..." autocomplete="off" />
               <button class="btn btn-primary" type="submit">Enviar</button>
             </form>
           </div>
@@ -64,28 +66,25 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getDatabase, ref, set, push, onValue, onDisconnect, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, set, push, onValue, onDisconnect, remove, update, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // Configuración Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
       authDomain: "llamapp-c8d6c.firebaseapp.com",
       databaseURL: "https://llamapp-c8d6c-default-rtdb.firebaseio.com",
       projectId: "llamapp-c8d6c",
-      storageBucket: "llamapp-c8d6c.firebasestorage.app",
+      storageBucket: "llamapp-c8d6c.appspot.com",
       messagingSenderId: "132119278171",
       appId: "1:132119278171:web:d11d942c8dc2f4ed9a057e",
       measurementId: "G-4VN80ZMS5L"
     };
 
-    // Inicialización
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
     const auth = getAuth(app);
     const db = getDatabase(app);
     const provider = new GoogleAuthProvider();
 
-    // Elementos UI
     const loginView = document.getElementById('loginView');
     const dashboardView = document.getElementById('dashboardView');
     const btnLoginGoogle = document.getElementById('btnLoginGoogle');
@@ -99,10 +98,26 @@
     const chatHistory = document.getElementById('chatHistory');
     const chatForm = document.getElementById('chatForm');
     const chatInput = document.getElementById('chatInput');
+    const typingStatus = document.getElementById('typingStatus');
 
     let currentUser = null;
     let chatPartner = null;
     let chatRef = null;
+    let typingRef = null;
+    let partnerTypingRef = null;
+
+    function notifySound() {
+      const ctx = new AudioContext();
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.15);
+    }
 
     function showError(msg) {
       const alert = document.createElement('div');
@@ -119,6 +134,7 @@
 
     btnLogout.onclick = async () => {
       if (chatRef) off(chatRef);
+      if (partnerTypingRef) off(partnerTypingRef);
       await signOut(auth);
     };
 
@@ -128,7 +144,6 @@
         loginView.classList.add('d-none');
         dashboardView.classList.remove('d-none');
         userAvatar.src = user.photoURL;
-
         const userRef = ref(db, 'presence/' + user.uid);
         set(userRef, { name: user.displayName, photo: user.photoURL });
         onDisconnect(userRef).remove();
@@ -137,7 +152,6 @@
         currentUser = null;
         loginView.classList.remove('d-none');
         dashboardView.classList.add('d-none');
-        if (chatRef) off(chatRef);
       }
     });
 
@@ -161,13 +175,19 @@
       chatPartner = partnerUid;
       chatModalLabel.textContent = "Chat con " + partnerName;
       chatHistory.innerHTML = '';
+      typingStatus.textContent = '';
+
       if (chatRef) off(chatRef);
+      if (partnerTypingRef) off(partnerTypingRef);
 
       const chatId = currentUser.uid < partnerUid
         ? currentUser.uid + '_' + partnerUid
         : partnerUid + '_' + currentUser.uid;
 
       chatRef = ref(db, 'chats/' + chatId);
+      typingRef = ref(db, `typing/${chatId}/${currentUser.uid}`);
+      partnerTypingRef = ref(db, `typing/${chatId}/${partnerUid}`);
+
       onValue(chatRef, snap => {
         chatHistory.innerHTML = '';
         snap.forEach(msg => {
@@ -178,12 +198,25 @@
             <span class="badge ${m.from === currentUser.uid ? 'bg-primary' : 'bg-secondary'}">${m.text}</span><br>
             <small class="text-muted">${new Date(m.createdAt).toLocaleTimeString()}</small>`;
           chatHistory.appendChild(div);
+          if (m.from !== currentUser.uid) notifySound();
         });
         chatHistory.scrollTop = chatHistory.scrollHeight;
       });
 
+      onValue(partnerTypingRef, snap => {
+        typingStatus.textContent = snap.val() ? `${partnerName} está escribiendo...` : '';
+      });
+
       chatModal.show();
     }
+
+    let typingTimeout;
+    chatInput.oninput = () => {
+      if (!typingRef) return;
+      set(typingRef, true);
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => remove(typingRef), 1500);
+    };
 
     chatForm.onsubmit = async e => {
       e.preventDefault();
@@ -195,10 +228,10 @@
         createdAt: Date.now()
       });
       chatInput.value = '';
+      remove(typingRef);
     };
   </script>
 
-  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
