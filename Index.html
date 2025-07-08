@@ -2,16 +2,16 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chat 1 a 1 - Firebase + Voz</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat 1 a 1 - Firebase</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"/>
 </head>
 <body class="bg-light">
   <div class="container py-4">
     <div id="alertContainer"></div>
 
-    <!-- Login -->
+    <!-- Login View -->
     <div id="loginView" class="row justify-content-center">
       <div class="col-md-6 col-lg-4">
         <div class="card shadow">
@@ -26,12 +26,12 @@
       </div>
     </div>
 
-    <!-- Dashboard -->
+    <!-- Dashboard View -->
     <div id="dashboardView" class="d-none">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-chat-dots"></i> Usuarios</h2>
         <div>
-          <img id="userAvatar" src="" class="rounded-circle me-2" width="40" height="40" />
+          <img id="userAvatar" src="" class="rounded-circle me-2" width="40" height="40">
           <button id="btnLogout" class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
         </div>
       </div>
@@ -55,63 +55,25 @@
               <input id="chatInput" class="form-control me-2" placeholder="Escribe un mensaje..." autocomplete="off" />
               <button class="btn btn-primary" type="submit">Enviar</button>
             </form>
-            <button id="btnCall" class="btn btn-outline-success w-100 mt-3">
-              <i class="bi bi-telephone"></i> Llamar
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Incoming Call Modal -->
-    <div class="modal fade" id="incomingCallModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content text-center">
-          <div class="modal-header">
-            <h5 class="modal-title">Llamada entrante</h5>
-          </div>
-          <div class="modal-body">
-            <p id="incomingCaller">Alguien te está llamando...</p>
-            <button id="btnAcceptCall" class="btn btn-success me-2">Aceptar</button>
-            <button id="btnRejectCall" class="btn btn-danger">Rechazar</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Call Modal -->
-    <div class="modal fade" id="callModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Llamada en curso</h5>
-          </div>
-          <div class="modal-body text-center">
-            <p id="callStatus">Estableciendo conexión...</p>
-            <button id="btnEndCall" class="btn btn-danger mt-3">Colgar</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- Firebase + App -->
+  <!-- Firebase SDK + Script -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-analytics.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
-    import { getFirestore, collection, doc, setDoc, getDoc, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getDatabase, ref, set, push, onValue, onDisconnect, remove, update, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // Tu configuración
     const firebaseConfig = {
       apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
       authDomain: "llamapp-c8d6c.firebaseapp.com",
       databaseURL: "https://llamapp-c8d6c-default-rtdb.firebaseio.com",
       projectId: "llamapp-c8d6c",
-      storageBucket: "llamapp-c8d6c.firebasestorage.app",
+      storageBucket: "llamapp-c8d6c.appspot.com",
       messagingSenderId: "132119278171",
       appId: "1:132119278171:web:d11d942c8dc2f4ed9a057e",
       measurementId: "G-4VN80ZMS5L"
@@ -119,11 +81,9 @@
 
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
-    const auth = getAuth();
-    const db = getFirestore();
-
-    let currentUser = null;
-    let currentChatUser = null;
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    const provider = new GoogleAuthProvider();
 
     const loginView = document.getElementById('loginView');
     const dashboardView = document.getElementById('dashboardView');
@@ -131,146 +91,147 @@
     const btnLogout = document.getElementById('btnLogout');
     const userAvatar = document.getElementById('userAvatar');
     const usersList = document.getElementById('usersList');
+    const alertContainer = document.getElementById('alertContainer');
+
     const chatModal = new bootstrap.Modal(document.getElementById('chatModal'));
     const chatModalLabel = document.getElementById('chatModalLabel');
     const chatHistory = document.getElementById('chatHistory');
     const chatForm = document.getElementById('chatForm');
     const chatInput = document.getElementById('chatInput');
-    const btnCall = document.getElementById('btnCall');
-    const callModal = new bootstrap.Modal(document.getElementById('callModal'));
-    const callStatus = document.getElementById('callStatus');
-    const btnEndCall = document.getElementById('btnEndCall');
-    const incomingCallModal = new bootstrap.Modal(document.getElementById('incomingCallModal'));
-    const incomingCaller = document.getElementById('incomingCaller');
-    const btnAcceptCall = document.getElementById('btnAcceptCall');
-    const btnRejectCall = document.getElementById('btnRejectCall');
+    const typingStatus = document.getElementById('typingStatus');
 
-    btnLoginGoogle.addEventListener('click', async () => {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    });
+    let currentUser = null;
+    let chatPartner = null;
+    let chatRef = null;
+    let typingRef = null;
+    let partnerTypingRef = null;
 
-    onAuthStateChanged(auth, async user => {
+    function notifySound() {
+      const ctx = new AudioContext();
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.15);
+    }
+
+    function showError(msg) {
+      const alert = document.createElement('div');
+      alert.className = 'alert alert-danger alert-dismissible fade show';
+      alert.innerHTML = `${msg}<button class="btn-close" data-bs-dismiss="alert"></button>`;
+      alertContainer.appendChild(alert);
+      setTimeout(() => alert.remove(), 5000);
+    }
+
+    btnLoginGoogle.onclick = async () => {
+      try { await signInWithPopup(auth, provider); }
+      catch (e) { showError("Error de login: " + e.message); }
+    };
+
+    btnLogout.onclick = async () => {
+      if (chatRef) off(chatRef);
+      if (partnerTypingRef) off(partnerTypingRef);
+      await signOut(auth);
+    };
+
+    onAuthStateChanged(auth, user => {
       if (user) {
         currentUser = user;
-        await setDoc(doc(db, "users", user.uid), {
-          uid: user.uid,
-          name: user.displayName,
-          avatar: user.photoURL,
-          email: user.email,
-          lastSeen: serverTimestamp()
-        });
         loginView.classList.add('d-none');
         dashboardView.classList.remove('d-none');
         userAvatar.src = user.photoURL;
+        const userRef = ref(db, 'presence/' + user.uid);
+        set(userRef, { name: user.displayName, photo: user.photoURL });
+        onDisconnect(userRef).remove();
         loadUsers();
       } else {
+        currentUser = null;
         loginView.classList.remove('d-none');
         dashboardView.classList.add('d-none');
       }
     });
 
-    btnLogout.addEventListener('click', () => signOut(auth));
-
-    async function loadUsers() {
-      const q = query(collection(db, "users"));
-      onSnapshot(q, snapshot => {
-        usersList.innerHTML = "";
-        snapshot.forEach(docu => {
-          const data = docu.data();
-          if (data.uid !== currentUser.uid) {
-            const li = document.createElement('li');
-            li.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
-            li.innerHTML = `<div><img src="${data.avatar}" width="32" class="rounded-circle me-2"><strong>${data.name}</strong></div>
-              <button class="btn btn-sm btn-primary">Chat</button>`;
-            li.querySelector("button").addEventListener("click", () => openChat(data));
-            usersList.appendChild(li);
-          }
+    function loadUsers() {
+      onValue(ref(db, 'presence'), snap => {
+        usersList.innerHTML = '';
+        snap.forEach(u => {
+          const uid = u.key;
+          if (uid === currentUser.uid) return;
+          const data = u.val();
+          const li = document.createElement('li');
+          li.className = 'list-group-item list-group-item-action d-flex align-items-center';
+          li.innerHTML = `<img src="${data.photo}" class="rounded-circle me-3" width="30" height="30"> <span>${data.name}</span>`;
+          li.onclick = () => openChat(uid, data.name);
+          usersList.appendChild(li);
         });
       });
     }
 
-    function openChat(user) {
-      currentChatUser = user;
-      chatModalLabel.textContent = user.name;
-      chatModal.show();
-      loadChatMessages();
-    }
+    function openChat(partnerUid, partnerName) {
+      chatPartner = partnerUid;
+      chatModalLabel.textContent = "Chat con " + partnerName;
+      chatHistory.innerHTML = '';
+      typingStatus.textContent = '';
 
-    function loadChatMessages() {
-      const chatId = getChatId(currentUser.uid, currentChatUser.uid);
-      const q = query(collection(db, "chats", chatId, "messages"), orderBy("timestamp"));
-      onSnapshot(q, snapshot => {
-        chatHistory.innerHTML = "";
-        snapshot.forEach(doc => {
-          const msg = doc.data();
-          const div = document.createElement("div");
-          div.classList.add("mb-2");
-          div.innerHTML = `<strong>${msg.sender === currentUser.uid ? "Tú" : currentChatUser.name}:</strong> ${msg.text}`;
+      if (chatRef) off(chatRef);
+      if (partnerTypingRef) off(partnerTypingRef);
+
+      const chatId = currentUser.uid < partnerUid
+        ? currentUser.uid + '_' + partnerUid
+        : partnerUid + '_' + currentUser.uid;
+
+      chatRef = ref(db, 'chats/' + chatId);
+      typingRef = ref(db, `typing/${chatId}/${currentUser.uid}`);
+      partnerTypingRef = ref(db, `typing/${chatId}/${partnerUid}`);
+
+      onValue(chatRef, snap => {
+        chatHistory.innerHTML = '';
+        snap.forEach(msg => {
+          const m = msg.val();
+          const div = document.createElement('div');
+          div.className = m.from === currentUser.uid ? 'text-end mb-2' : 'text-start mb-2';
+          div.innerHTML = `
+            <span class="badge ${m.from === currentUser.uid ? 'bg-primary' : 'bg-secondary'}">${m.text}</span><br>
+            <small class="text-muted">${new Date(m.createdAt).toLocaleTimeString()}</small>`;
           chatHistory.appendChild(div);
+          if (m.from !== currentUser.uid) notifySound();
         });
         chatHistory.scrollTop = chatHistory.scrollHeight;
       });
+
+      onValue(partnerTypingRef, snap => {
+        typingStatus.textContent = snap.val() ? `${partnerName} está escribiendo...` : '';
+      });
+
+      chatModal.show();
     }
 
-    chatForm.addEventListener("submit", async e => {
+    let typingTimeout;
+    chatInput.oninput = () => {
+      if (!typingRef) return;
+      set(typingRef, true);
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => remove(typingRef), 1500);
+    };
+
+    chatForm.onsubmit = async e => {
       e.preventDefault();
       const text = chatInput.value.trim();
-      if (!text) return;
-      const chatId = getChatId(currentUser.uid, currentChatUser.uid);
-      await addDoc(collection(db, "chats", chatId, "messages"), {
-        sender: currentUser.uid,
+      if (!text || !chatRef) return;
+      await push(chatRef, {
+        from: currentUser.uid,
         text,
-        timestamp: serverTimestamp()
+        createdAt: Date.now()
       });
-      chatInput.value = "";
-    });
-
-    function getChatId(uid1, uid2) {
-      return [uid1, uid2].sort().join("_");
-    }
-
-    // Llamadas
-    btnCall.addEventListener("click", async () => {
-      await setDoc(doc(db, "calls", currentChatUser.uid), {
-        from: currentUser.uid,
-        fromName: currentUser.displayName,
-        timestamp: Date.now(),
-        status: "ringing"
-      });
-      callModal.show();
-      callStatus.textContent = "Esperando que respondan...";
-    });
-
-    onSnapshot(doc(db, "calls", auth.currentUser?.uid || "null"), docSnap => {
-      const data = docSnap.data();
-      if (data && data.status === "ringing") {
-        incomingCaller.textContent = `${data.fromName} te está llamando...`;
-        incomingCallModal.show();
-      }
-    });
-
-    btnAcceptCall.addEventListener("click", async () => {
-      await setDoc(doc(db, "calls", currentUser.uid), { status: "accepted" }, { merge: true });
-      incomingCallModal.hide();
-      callModal.show();
-      callStatus.textContent = "Conectado";
-    });
-
-    btnRejectCall.addEventListener("click", async () => {
-      await setDoc(doc(db, "calls", currentUser.uid), { status: "rejected" }, { merge: true });
-      incomingCallModal.hide();
-    });
-
-    btnEndCall.addEventListener("click", async () => {
-      await setDoc(doc(db, "calls", currentUser.uid), { status: "ended" }, { merge: true });
-      await addDoc(collection(db, "logs"), {
-        from: currentUser.uid,
-        to: currentChatUser.uid,
-        endedAt: Date.now()
-      });
-      callModal.hide();
-    });
+      chatInput.value = '';
+      remove(typingRef);
+    };
   </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
