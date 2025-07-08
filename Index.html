@@ -288,7 +288,6 @@
     let isMuted = false;
     let callStartTime;
     let currentCallPartner = null;
-    let callListeners = {};
     
     // ICE Servers Configuration
     const iceServers = {
@@ -403,10 +402,7 @@
     function loadUsers() {
       const usersRef = ref(db, 'presence');
       
-      // Clear previous listener if exists
-      if (callListeners.usersList) off(callListeners.usersList);
-      
-      callListeners.usersList = onValue(usersRef, (snapshot) => {
+      onValue(usersRef, (snapshot) => {
         usersList.innerHTML = '';
         
         snapshot.forEach((userSnapshot) => {
@@ -482,12 +478,8 @@
           createdAt: Date.now()
         });
         
-        // Clear previous listeners
-        if (callListeners.callStatus) off(callListeners.callStatus);
-        if (callListeners.calleeCandidates) off(callListeners.calleeCandidates);
-        
         // Listen for call answer/rejection
-        callListeners.callStatus = onValue(callRef, async (snapshot) => {
+        onValue(callRef, async (snapshot) => {
           const callData = snapshot.val();
           if (!callData) return;
           
@@ -502,16 +494,21 @@
             activeCallModal.show();
             startCallTimer(activeCallTimer);
           } else if (callData.status === 'ended') {
-            // Only show notification if we haven't already ended the call
-            if (currentCallId) {
-              showAlert('info', `${targetName} finalizó la llamada`);
-              await endCall();
-            }
+            showAlert('info', `${targetName} finalizó la llamada`);
+            await endCall();
+          }
+        });
+        
+        // Listen for answer
+        onValue(ref(db, `calls/${currentCallId}/answer`), async (snapshot) => {
+          const answer = snapshot.val();
+          if (answer && !peerConnection.currentRemoteDescription) {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
           }
         });
         
         // Listen for callee candidates
-        callListeners.calleeCandidates = onValue(ref(db, `calls/${currentCallId}/calleeCandidates`), (snapshot) => {
+        onValue(ref(db, `calls/${currentCallId}/calleeCandidates`), (snapshot) => {
           snapshot.forEach((candidate) => {
             peerConnection.addIceCandidate(new RTCIceCandidate(candidate.val()));
           });
@@ -536,10 +533,7 @@
     function listenForIncomingCalls() {
       const callsRef = ref(db, 'calls');
       
-      // Clear previous listener
-      if (callListeners.incomingCalls) off(callListeners.incomingCalls);
-      
-      callListeners.incomingCalls = onValue(callsRef, (snapshot) => {
+      onValue(callsRef, (snapshot) => {
         snapshot.forEach((callSnapshot) => {
           const callData = callSnapshot.val();
           
@@ -553,10 +547,9 @@
             };
             
             // Update UI for incoming call
-     incomingCallName.textContent = `${callData.callerName} te está llamando`;
+            incomingCallName.textContent = `${callData.callerName} te está llamando`;
             incomingCallAvatar.src = callData.callerPhoto;
-            
-            // Play ringtone
+// Play ringtone
             playRingtone();
             incomingCallModal.show();
             
@@ -601,13 +594,8 @@
           remoteAudio.srcObject = event.streams[0];
         };
         
-        // Clear previous listeners
-        if (callListeners.offer) off(callListeners.offer);
-        if (callListeners.callStatus) off(callListeners.callStatus);
-        if (callListeners.callerCandidates) off(callListeners.callerCandidates);
-        
         // Listen for offer
-        callListeners.offer = onValue(ref(db, `calls/${currentCallId}/offer`), async (snapshot) => {
+        onValue(ref(db, `calls/${currentCallId}/offer`), async (snapshot) => {
           const offer = snapshot.val();
           if (offer && !peerConnection.currentRemoteDescription) {
             await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
@@ -623,21 +611,18 @@
         });
         
         // Listen for caller candidates
-        callListeners.callerCandidates = onValue(ref(db, `calls/${currentCallId}/callerCandidates`), (snapshot) => {
+        onValue(ref(db, `calls/${currentCallId}/callerCandidates`), (snapshot) => {
           snapshot.forEach((candidate) => {
             peerConnection.addIceCandidate(new RTCIceCandidate(candidate.val()));
           });
         });
         
         // Listen for call ending
-        callListeners.callStatus = onValue(callRef, async (snapshot) => {
+        onValue(callRef, async (snapshot) => {
           const callData = snapshot.val();
           if (callData && callData.status === 'ended') {
-            // Only show notification if we haven't already ended the call
-            if (currentCallId) {
-              showAlert('info', `${currentCallPartner.name} finalizó la llamada`);
-              await endCall();
-            }
+            showAlert('info', `${currentCallPartner.name} finalizó la llamada`);
+            await endCall();
           }
         });
         
@@ -646,8 +631,6 @@
         activeCallAvatar.src = currentCallPartner.photo;
         activeCallTimer.textContent = '00:00';
         activeCallModal.show();
-        
-        // Start call timer AFTER the call is answered
         startCallTimer(activeCallTimer);
         
       } catch (error) {
@@ -697,10 +680,6 @@
         activeCallModal.hide();
         incomingCallModal.hide();
         
-        // Clear all call listeners
-        Object.values(callListeners).forEach(off);
-        callListeners = {};
-        
         // Reset call state
         currentCallId = null;
         currentCallPartner = null;
@@ -746,10 +725,6 @@
         currentUser = null;
         loginView.classList.remove('d-none');
         dashboardView.classList.add('d-none');
-        
-        // Clean up any remaining listeners
-        Object.values(callListeners).forEach(off);
-        callListeners = {};
       }
     });
 
