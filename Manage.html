@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestor de Inventario</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">InventarioApp</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarContent">
+        <ul class="navbar-nav me-auto"></ul>
+        <div id="userArea" class="d-flex align-items-center">
+          <!-- Dinámico: login/logout -->
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenido Principal -->
+  <div class="container mt-4" id="mainContent" style="display:none;">
+    <h2>Gestión de Productos</h2>
+    <form id="productForm" class="mb-4">
+      <input type="hidden" id="productId" />
+      <div class="row g-2">
+        <div class="col-md-4">
+          <input type="text" id="nombre" class="form-control" placeholder="Nombre del producto" required />
+        </div>
+        <div class="col-md-3">
+          <input type="number" id="cantidad" class="form-control" placeholder="Cantidad" required />
+        </div>
+        <div class="col-md-3">
+          <input type="number" id="precio" class="form-control" placeholder="Precio" required />
+        </div>
+        <div class="col-md-2 d-grid">
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </div>
+    </form>
+
+    <table class="table table-bordered table-hover">
+      <thead class="table-dark">
+        <tr>
+          <th>Nombre</th>
+          <th>Cantidad</th>
+          <th>Precio</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="productosList"></tbody>
+    </table>
+  </div>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
+      authDomain: "llamapp-c8d6c.firebaseapp.com",
+      databaseURL: "https://llamapp-c8d6c-default-rtdb.firebaseio.com",
+      projectId: "llamapp-c8d6c",
+      storageBucket: "llamapp-c8d6c.appspot.com",
+      messagingSenderId: "132119278171",
+      appId: "1:132119278171:web:d11d942c8dc2f4ed9a057e",
+      measurementId: "G-4VN80ZMS5L"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const auth = getAuth();
+    const db = getDatabase();
+    const provider = new GoogleAuthProvider();
+
+    const userArea = document.getElementById("userArea");
+    const mainContent = document.getElementById("mainContent");
+    let currentUser = null;
+
+    function login() {
+      signInWithPopup(auth, provider).catch(console.error);
+    }
+
+    function logout() {
+      signOut(auth).catch(console.error);
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      userArea.innerHTML = "";
+      if (user) {
+        currentUser = user;
+        userArea.innerHTML = `
+          <span class="text-white me-3">${user.displayName}</span>
+          <button class="btn btn-outline-light btn-sm" onclick="logout()">Cerrar sesión</button>
+        `;
+        mainContent.style.display = "block";
+        cargarProductos();
+      } else {
+        currentUser = null;
+        mainContent.style.display = "none";
+        userArea.innerHTML = `<button class="btn btn-outline-light btn-sm" onclick="login()">Iniciar sesión con Google</button>`;
+      }
+    });
+
+    // Exponer logout globalmente
+    window.logout = logout;
+
+    // CRUD
+    const form = document.getElementById("productForm");
+    const nombre = document.getElementById("nombre");
+    const cantidad = document.getElementById("cantidad");
+    const precio = document.getElementById("precio");
+    const productId = document.getElementById("productId");
+    const productosList = document.getElementById("productosList");
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const producto = {
+        nombre: nombre.value,
+        cantidad: Number(cantidad.value),
+        precio: Number(precio.value),
+      };
+
+      const userRef = `inventario/${currentUser.uid}/productos`;
+
+      if (productId.value) {
+        const productoRef = ref(db, `${userRef}/${productId.value}`);
+        update(productoRef, producto);
+      } else {
+        const newRef = push(ref(db, userRef));
+        set(newRef, producto);
+      }
+
+      form.reset();
+      productId.value = "";
+    });
+
+    function cargarProductos() {
+      const userRef = `inventario/${currentUser.uid}/productos`;
+      const productosRef = ref(db, userRef);
+
+      onValue(productosRef, (snapshot) => {
+        productosList.innerHTML = "";
+        snapshot.forEach((child) => {
+          const data = child.val();
+          const key = child.key;
+          productosList.innerHTML += `
+            <tr>
+              <td>${data.nombre}</td>
+              <td>${data.cantidad}</td>
+              <td>$${data.precio.toFixed(2)}</td>
+              <td>
+                <button class="btn btn-sm btn-warning me-2" onclick="editarProducto('${key}', '${data.nombre}', ${data.cantidad}, ${data.precio})">Editar</button>
+                <button class="btn btn-sm btn-danger" onclick="eliminarProducto('${key}')">Eliminar</button>
+              </td>
+            </tr>
+          `;
+        });
+      });
+    }
+
+    window.editarProducto = (id, nombreVal, cantidadVal, precioVal) => {
+      productId.value = id;
+      nombre.value = nombreVal;
+      cantidad.value = cantidadVal;
+      precio.value = precioVal;
+    };
+
+    window.eliminarProducto = (id) => {
+      const userRef = `inventario/${currentUser.uid}/productos`;
+      remove(ref(db, `${userRef}/${id}`));
+    };
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
