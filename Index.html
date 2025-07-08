@@ -9,10 +9,9 @@
 </head>
 <body class="bg-light">
   <div class="container py-4">
-    <!-- Alerta -->
     <div id="alertContainer"></div>
 
-    <!-- Login View -->
+    <!-- Login -->
     <div id="loginView" class="row justify-content-center">
       <div class="col-md-6 col-lg-4">
         <div class="card shadow">
@@ -27,7 +26,7 @@
       </div>
     </div>
 
-    <!-- Dashboard View -->
+    <!-- Dashboard -->
     <div id="dashboardView" class="d-none">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-chat-dots"></i> Usuarios</h2>
@@ -80,14 +79,14 @@
       </div>
     </div>
 
-    <!-- Call In Progress Modal -->
+    <!-- Call Modal -->
     <div class="modal fade" id="callModal" tabindex="-1">
       <div class="modal-dialog">
-        <div class="modal-content text-center">
+        <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Llamada en curso</h5>
           </div>
-          <div class="modal-body">
+          <div class="modal-body text-center">
             <p id="callStatus">Estableciendo conexión...</p>
             <button id="btnEndCall" class="btn btn-danger mt-3">Colgar</button>
           </div>
@@ -96,8 +95,182 @@
     </div>
   </div>
 
-  <!-- Scripts -->
-  <script type="module" src="app.js"></script>
+  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Firebase + App -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-analytics.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+
+    // Tu configuración
+    const firebaseConfig = {
+      apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
+      authDomain: "llamapp-c8d6c.firebaseapp.com",
+      databaseURL: "https://llamapp-c8d6c-default-rtdb.firebaseio.com",
+      projectId: "llamapp-c8d6c",
+      storageBucket: "llamapp-c8d6c.firebasestorage.app",
+      messagingSenderId: "132119278171",
+      appId: "1:132119278171:web:d11d942c8dc2f4ed9a057e",
+      measurementId: "G-4VN80ZMS5L"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const auth = getAuth();
+    const db = getFirestore();
+
+    let currentUser = null;
+    let currentChatUser = null;
+
+    const loginView = document.getElementById('loginView');
+    const dashboardView = document.getElementById('dashboardView');
+    const btnLoginGoogle = document.getElementById('btnLoginGoogle');
+    const btnLogout = document.getElementById('btnLogout');
+    const userAvatar = document.getElementById('userAvatar');
+    const usersList = document.getElementById('usersList');
+    const chatModal = new bootstrap.Modal(document.getElementById('chatModal'));
+    const chatModalLabel = document.getElementById('chatModalLabel');
+    const chatHistory = document.getElementById('chatHistory');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const btnCall = document.getElementById('btnCall');
+    const callModal = new bootstrap.Modal(document.getElementById('callModal'));
+    const callStatus = document.getElementById('callStatus');
+    const btnEndCall = document.getElementById('btnEndCall');
+    const incomingCallModal = new bootstrap.Modal(document.getElementById('incomingCallModal'));
+    const incomingCaller = document.getElementById('incomingCaller');
+    const btnAcceptCall = document.getElementById('btnAcceptCall');
+    const btnRejectCall = document.getElementById('btnRejectCall');
+
+    btnLoginGoogle.addEventListener('click', async () => {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    });
+
+    onAuthStateChanged(auth, async user => {
+      if (user) {
+        currentUser = user;
+        await setDoc(doc(db, "users", user.uid), {
+          uid: user.uid,
+          name: user.displayName,
+          avatar: user.photoURL,
+          email: user.email,
+          lastSeen: serverTimestamp()
+        });
+        loginView.classList.add('d-none');
+        dashboardView.classList.remove('d-none');
+        userAvatar.src = user.photoURL;
+        loadUsers();
+      } else {
+        loginView.classList.remove('d-none');
+        dashboardView.classList.add('d-none');
+      }
+    });
+
+    btnLogout.addEventListener('click', () => signOut(auth));
+
+    async function loadUsers() {
+      const q = query(collection(db, "users"));
+      onSnapshot(q, snapshot => {
+        usersList.innerHTML = "";
+        snapshot.forEach(docu => {
+          const data = docu.data();
+          if (data.uid !== currentUser.uid) {
+            const li = document.createElement('li');
+            li.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+            li.innerHTML = `<div><img src="${data.avatar}" width="32" class="rounded-circle me-2"><strong>${data.name}</strong></div>
+              <button class="btn btn-sm btn-primary">Chat</button>`;
+            li.querySelector("button").addEventListener("click", () => openChat(data));
+            usersList.appendChild(li);
+          }
+        });
+      });
+    }
+
+    function openChat(user) {
+      currentChatUser = user;
+      chatModalLabel.textContent = user.name;
+      chatModal.show();
+      loadChatMessages();
+    }
+
+    function loadChatMessages() {
+      const chatId = getChatId(currentUser.uid, currentChatUser.uid);
+      const q = query(collection(db, "chats", chatId, "messages"), orderBy("timestamp"));
+      onSnapshot(q, snapshot => {
+        chatHistory.innerHTML = "";
+        snapshot.forEach(doc => {
+          const msg = doc.data();
+          const div = document.createElement("div");
+          div.classList.add("mb-2");
+          div.innerHTML = `<strong>${msg.sender === currentUser.uid ? "Tú" : currentChatUser.name}:</strong> ${msg.text}`;
+          chatHistory.appendChild(div);
+        });
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+      });
+    }
+
+    chatForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text) return;
+      const chatId = getChatId(currentUser.uid, currentChatUser.uid);
+      await addDoc(collection(db, "chats", chatId, "messages"), {
+        sender: currentUser.uid,
+        text,
+        timestamp: serverTimestamp()
+      });
+      chatInput.value = "";
+    });
+
+    function getChatId(uid1, uid2) {
+      return [uid1, uid2].sort().join("_");
+    }
+
+    // Llamadas
+    btnCall.addEventListener("click", async () => {
+      await setDoc(doc(db, "calls", currentChatUser.uid), {
+        from: currentUser.uid,
+        fromName: currentUser.displayName,
+        timestamp: Date.now(),
+        status: "ringing"
+      });
+      callModal.show();
+      callStatus.textContent = "Esperando que respondan...";
+    });
+
+    onSnapshot(doc(db, "calls", auth.currentUser?.uid || "null"), docSnap => {
+      const data = docSnap.data();
+      if (data && data.status === "ringing") {
+        incomingCaller.textContent = `${data.fromName} te está llamando...`;
+        incomingCallModal.show();
+      }
+    });
+
+    btnAcceptCall.addEventListener("click", async () => {
+      await setDoc(doc(db, "calls", currentUser.uid), { status: "accepted" }, { merge: true });
+      incomingCallModal.hide();
+      callModal.show();
+      callStatus.textContent = "Conectado";
+    });
+
+    btnRejectCall.addEventListener("click", async () => {
+      await setDoc(doc(db, "calls", currentUser.uid), { status: "rejected" }, { merge: true });
+      incomingCallModal.hide();
+    });
+
+    btnEndCall.addEventListener("click", async () => {
+      await setDoc(doc(db, "calls", currentUser.uid), { status: "ended" }, { merge: true });
+      await addDoc(collection(db, "logs"), {
+        from: currentUser.uid,
+        to: currentChatUser.uid,
+        endedAt: Date.now()
+      });
+      callModal.hide();
+    });
+  </script>
 </body>
 </html>
