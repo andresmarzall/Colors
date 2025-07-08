@@ -1,448 +1,336 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chat 1 a 1 - Firebase + Voz</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat con Llamadas 1:1</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
-    audio { display: none; }
-    .call-modal .call-timer {
-      font-size: 2rem;
-      font-weight: bold;
+    .user-active { background-color: #e8f5e9; }
+    .user-inactive { background-color: #ffebee; }
+    .call-modal {
       text-align: center;
+      padding: 20px;
+    }
+    .call-timer {
+      font-size: 24px;
       margin: 20px 0;
     }
-    .caller-info {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .caller-info img {
-      width: 80px;
-      height: 80px;
+    .call-avatar {
+      width: 100px;
+      height: 100px;
       border-radius: 50%;
-      margin-bottom: 10px;
+      margin: 0 auto 15px;
     }
-    .call-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      margin-top: 20px;
-    }
+    #remoteAudio { display: none; }
     .ringing {
-      animation: ringing 1.5s infinite;
+      animation: ring 1.5s infinite;
     }
-    @keyframes ringing {
-      0% { transform: rotate(0deg); }
-      25% { transform: rotate(10deg); }
-      50% { transform: rotate(0deg); }
-      75% { transform: rotate(-10deg); }
-      100% { transform: rotate(0deg); }
+    @keyframes ring {
+      0% { transform: rotate(0); }
+      25% { transform: rotate(15deg); }
+      50% { transform: rotate(0); }
+      75% { transform: rotate(-15deg); }
+      100% { transform: rotate(0); }
     }
   </style>
 </head>
 <body class="bg-light">
   <div class="container py-4">
-    <div id="alertContainer"></div>
-
-    <!-- Login View -->
+    <!-- Vista de Login -->
     <div id="loginView" class="row justify-content-center">
-      <div class="col-md-6 col-lg-4">
+      <div class="col-md-6">
         <div class="card shadow">
           <div class="card-body text-center p-5">
-            <h2 class="mb-4">Chat App</h2>
-            <p class="text-muted mb-4">Ingresa con Google</p>
-            <button id="btnLoginGoogle" class="btn btn-danger btn-lg w-100">
-              <i class="bi bi-google"></i> Continuar con Google
+            <h2 class="mb-4">Chat con Llamadas</h2>
+            <button id="btnLogin" class="btn btn-primary btn-lg">
+              <i class="bi bi-google"></i> Ingresar con Google
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Dashboard View -->
-    <div id="dashboardView" class="d-none">
+    <!-- Vista Principal -->
+    <div id="appView" class="d-none">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-chat-dots"></i> Usuarios</h2>
-        <div>
-          <img id="userAvatar" src="" class="rounded-circle me-2" width="40" height="40">
-          <button id="btnLogout" class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
+        <h2><i class="bi bi-people-fill"></i> Usuarios Activos</h2>
+        <button id="btnLogout" class="btn btn-outline-danger">Salir</button>
+      </div>
+      
+      <div class="card shadow mb-4">
+        <div class="card-body p-0">
+          <ul id="usersList" class="list-group list-group-flush"></ul>
         </div>
       </div>
-      <ul id="usersList" class="list-group mb-4"></ul>
     </div>
 
-    <!-- Chat Modal -->
+    <!-- Modal de Chat -->
     <div class="modal fade" id="chatModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
           <div class="modal-header">
-            <div>
-              <h5 id="chatModalLabel" class="modal-title mb-0">Chat</h5>
-              <small id="typingStatus" class="text-muted"></small>
-            </div>
+            <h5 class="modal-title" id="chatTitle">Chat</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <div id="chatHistory" class="mb-3" style="max-height: 300px; overflow-y: auto;"></div>
-            <form id="chatForm" class="d-flex">
-              <input id="chatInput" class="form-control me-2" placeholder="Escribe un mensaje..." autocomplete="off" />
-              <button class="btn btn-primary" type="submit">Enviar</button>
+            <div id="chatMessages" style="height: 300px; overflow-y: auto;"></div>
+            <form id="chatForm" class="mt-3">
+              <div class="input-group">
+                <input type="text" id="messageInput" class="form-control" placeholder="Escribe un mensaje...">
+                <button class="btn btn-primary" type="submit">Enviar</button>
+              </div>
             </form>
-            <div class="d-flex justify-content-end mt-3">
-              <button id="btnCall" class="btn btn-success me-2"><i class="bi bi-telephone-fill"></i> Llamar</button>
-              <button id="btnHangup" class="btn btn-danger d-none"><i class="bi bi-telephone-x-fill"></i> Colgar</button>
-            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="btnStartCall" class="btn btn-success">
+              <i class="bi bi-telephone-fill"></i> Llamar
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Call Modal -->
+    <!-- Modal de Llamada -->
     <div class="modal fade" id="callModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-body call-modal">
-            <div class="caller-info">
-              <img id="callerAvatar" src="" class="ringing" />
-              <h4 id="callerName"></h4>
-              <p id="callStatus">Llamando...</p>
-              <div class="call-timer d-none">00:00</div>
-            </div>
-            <div class="call-buttons">
-              <button id="btnAcceptCall" class="btn btn-success btn-lg rounded-circle"><i class="bi bi-telephone-fill"></i></button>
-              <button id="btnRejectCall" class="btn btn-danger btn-lg rounded-circle"><i class="bi bi-telephone-x-fill"></i></button>
-              <button id="btnEndCall" class="btn btn-danger btn-lg rounded-circle d-none"><i class="bi bi-telephone-x-fill"></i></button>
+            <img id="callAvatar" class="call-avatar ringing" src="">
+            <h4 id="callName"></h4>
+            <div id="callStatus">Llamando...</div>
+            <div id="callTimer" class="call-timer d-none">00:00</div>
+            <div class="mt-4">
+              <button id="btnAcceptCall" class="btn btn-success btn-lg mx-2 d-none">
+                <i class="bi bi-telephone-fill"></i>
+              </button>
+              <button id="btnRejectCall" class="btn btn-danger btn-lg mx-2 d-none">
+                <i class="bi bi-telephone-x-fill"></i>
+              </button>
+              <button id="btnEndCall" class="btn btn-danger btn-lg mx-2 d-none">
+                <i class="bi bi-telephone-x-fill"></i> Colgar
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Audio Elements -->
     <audio id="remoteAudio" autoplay></audio>
     <audio id="ringtone" loop src="https://assets.mixkit.co/sfx/preview/mixkit-phone-ring-1550.mp3"></audio>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getDatabase, ref, set, push, onValue, onDisconnect, remove, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+    // Configuración Firebase
     const firebaseConfig = {
-      apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
-      authDomain: "llamapp-c8d6c.firebaseapp.com",
-      databaseURL: "https://llamapp-c8d6c-default-rtdb.firebaseio.com",
-      projectId: "llamapp-c8d6c",
-      storageBucket: "llamapp-c8d6c.appspot.com",
-      messagingSenderId: "132119278171",
-      appId: "1:132119278171:web:d11d942c8dc2f4ed9a057e",
-      measurementId: "G-4VN80ZMS5L"
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_DOMINIO.firebaseapp.com",
+      databaseURL: "https://TU_PROYECTO.firebaseio.com",
+      projectId: "TU_PROYECTO",
+      storageBucket: "TU_PROYECTO.appspot.com",
+      messagingSenderId: "TU_SENDER_ID",
+      appId: "TU_APP_ID"
     };
 
     const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
     const auth = getAuth(app);
     const db = getDatabase(app);
     const provider = new GoogleAuthProvider();
 
     // Elementos del DOM
     const loginView = document.getElementById('loginView');
-    const dashboardView = document.getElementById('dashboardView');
-    const btnLoginGoogle = document.getElementById('btnLoginGoogle');
+    const appView = document.getElementById('appView');
+    const btnLogin = document.getElementById('btnLogin');
     const btnLogout = document.getElementById('btnLogout');
-    const userAvatar = document.getElementById('userAvatar');
     const usersList = document.getElementById('usersList');
-    const chatModal = new bootstrap.Modal(document.getElementById('chatModal'));
-    const chatModalLabel = document.getElementById('chatModalLabel');
-    const chatHistory = document.getElementById('chatHistory');
+    const chatModal = new bootstrap.Modal('#chatModal');
+    const callModal = new bootstrap.Modal('#callModal');
+    const chatMessages = document.getElementById('chatMessages');
+    const messageInput = document.getElementById('messageInput');
     const chatForm = document.getElementById('chatForm');
-    const chatInput = document.getElementById('chatInput');
-    const typingStatus = document.getElementById('typingStatus');
-    const btnCall = document.getElementById('btnCall');
-    const btnHangup = document.getElementById('btnHangup');
-    const remoteAudio = document.getElementById('remoteAudio');
-    const callModal = new bootstrap.Modal(document.getElementById('callModal'));
-    const callerAvatar = document.getElementById('callerAvatar');
-    const callerName = document.getElementById('callerName');
+    const btnStartCall = document.getElementById('btnStartCall');
+    const callAvatar = document.getElementById('callAvatar');
+    const callName = document.getElementById('callName');
     const callStatus = document.getElementById('callStatus');
-    const callTimer = document.querySelector('.call-timer');
+    const callTimer = document.getElementById('callTimer');
     const btnAcceptCall = document.getElementById('btnAcceptCall');
     const btnRejectCall = document.getElementById('btnRejectCall');
     const btnEndCall = document.getElementById('btnEndCall');
+    const remoteAudio = document.getElementById('remoteAudio');
     const ringtone = document.getElementById('ringtone');
 
     // Variables de estado
     let currentUser = null;
-    let chatPartner = null;
-    let chatRef = null;
-    let typingRef = null;
-    let partnerTypingRef = null;
+    let currentChat = null;
     let peerConnection = null;
     let localStream = null;
     let callStartTime = null;
     let callInterval = null;
-    let typingTimeout = null;
-    let incomingCallData = null;
+    let currentCall = null;
 
-    // Configuración RTC
-    const servers = { 
+    // Configuración WebRTC
+    const rtcConfig = {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' }
-      ] 
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
     };
 
     // Eventos de autenticación
-    btnLoginGoogle.onclick = async () => {
-      try { await signInWithPopup(auth, provider); }
-      catch (e) { showError("Error de login: " + e.message); }
-    };
+    btnLogin.addEventListener('click', () => signInWithPopup(auth, provider));
+    btnLogout.addEventListener('click', () => signOut(auth));
 
-    btnLogout.onclick = async () => {
-      if (chatRef) off(chatRef);
-      if (partnerTypingRef) off(partnerTypingRef);
-      endCall();
-      await signOut(auth);
-    };
-
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, (user) => {
       if (user) {
         currentUser = user;
         loginView.classList.add('d-none');
-        dashboardView.classList.remove('d-none');
-        userAvatar.src = user.photoURL;
-        const userRef = ref(db, 'presence/' + user.uid);
-        set(userRef, { name: user.displayName, photo: user.photoURL });
-        onDisconnect(userRef).remove();
+        appView.classList.remove('d-none');
+        setupPresence();
         loadUsers();
-        listenForCalls();
+        setupCallListener();
       } else {
         currentUser = null;
         loginView.classList.remove('d-none');
-        dashboardView.classList.add('d-none');
+        appView.classList.add('d-none');
       }
     });
 
-    // Funciones de chat
+    // Configurar presencia
+    function setupPresence() {
+      const userStatusRef = ref(db, `presence/${currentUser.uid}`);
+      set(userStatusRef, {
+        name: currentUser.displayName,
+        photo: currentUser.photoURL,
+        lastOnline: Date.now(),
+        status: 'online'
+      });
+      
+      onDisconnect(userStatusRef).remove();
+    }
+
+    // Cargar lista de usuarios
     function loadUsers() {
-      onValue(ref(db, 'presence'), snap => {
+      const usersRef = ref(db, 'presence');
+      
+      onValue(usersRef, (snapshot) => {
         usersList.innerHTML = '';
-        snap.forEach(u => {
-          const uid = u.key;
-          if (uid === currentUser.uid) return;
-          const data = u.val();
-          const li = document.createElement('li');
-          li.className = 'list-group-item list-group-item-action d-flex align-items-center';
-          li.innerHTML = `<img src="${data.photo}" class="rounded-circle me-3" width="30" height="30"> <span>${data.name}</span>`;
-          li.onclick = () => openChat(uid, data.name, data.photo);
-          usersList.appendChild(li);
+        snapshot.forEach((childSnapshot) => {
+          const uid = childSnapshot.key;
+          const user = childSnapshot.val();
+          
+          if (uid !== currentUser.uid) {
+            const li = document.createElement('li');
+            li.className = `list-group-item list-group-item-action ${user.status === 'online' ? 'user-active' : 'user-inactive'}`;
+            li.innerHTML = `
+              <div class="d-flex align-items-center">
+                <img src="${user.photo}" class="rounded-circle me-3" width="40" height="40">
+                <div>
+                  <h6 class="mb-0">${user.name}</h6>
+                  <small class="text-muted">${user.status === 'online' ? 'En línea' : 'Desconectado'}</small>
+                </div>
+              </div>
+            `;
+            
+            li.addEventListener('click', () => openChat(uid, user.name, user.photo));
+            usersList.appendChild(li);
+          }
         });
       });
     }
 
-    function openChat(partnerUid, partnerName, partnerPhoto) {
-      chatPartner = { uid: partnerUid, name: partnerName, photo: partnerPhoto };
-      chatModalLabel.textContent = "Chat con " + partnerName;
-      chatHistory.innerHTML = '';
-      typingStatus.textContent = '';
-
-      if (chatRef) off(chatRef);
-      if (partnerTypingRef) off(partnerTypingRef);
-
-      const chatId = currentUser.uid < partnerUid ? currentUser.uid + '_' + partnerUid : partnerUid + '_' + currentUser.uid;
-
-      chatRef = ref(db, 'chats/' + chatId);
-      typingRef = ref(db, `typing/${chatId}/${currentUser.uid}`);
-      partnerTypingRef = ref(db, `typing/${chatId}/${partnerUid}`);
-
-      onValue(chatRef, snap => {
-        chatHistory.innerHTML = '';
-        snap.forEach(msg => {
-          const m = msg.val();
-          const div = document.createElement('div');
-          div.className = m.from === currentUser.uid ? 'text-end mb-2' : 'text-start mb-2';
-          div.innerHTML = `<span class="badge ${m.from === currentUser.uid ? 'bg-primary' : 'bg-secondary'}">${m.text}</span><br><small class="text-muted">${new Date(m.createdAt).toLocaleTimeString()}</small>`;
-          chatHistory.appendChild(div);
+    // Abrir chat con usuario
+    function openChat(uid, name, photo) {
+      currentChat = { uid, name, photo };
+      document.getElementById('chatTitle').textContent = `Chat con ${name}`;
+      chatMessages.innerHTML = '';
+      
+      // Cargar mensajes
+      const chatId = [currentUser.uid, uid].sort().join('_');
+      const messagesRef = ref(db, `chats/${chatId}`);
+      
+      onValue(messagesRef, (snapshot) => {
+        chatMessages.innerHTML = '';
+        snapshot.forEach((childSnapshot) => {
+          const message = childSnapshot.val();
+          const messageDiv = document.createElement('div');
+          messageDiv.className = `mb-2 ${message.from === currentUser.uid ? 'text-end' : 'text-start'}`;
+          messageDiv.innerHTML = `
+            <span class="badge ${message.from === currentUser.uid ? 'bg-primary' : 'bg-secondary'}">
+              ${message.text}
+            </span>
+            <div class="small text-muted">
+              ${new Date(message.createdAt).toLocaleTimeString()}
+            </div>
+          `;
+          chatMessages.appendChild(messageDiv);
         });
-        chatHistory.scrollTop = chatHistory.scrollHeight;
+        
+        // Scroll al final
+        chatMessages.scrollTop = chatMessages.scrollHeight;
       });
-
-      onValue(partnerTypingRef, snap => {
-        typingStatus.textContent = snap.val() ? `${partnerName} está escribiendo...` : '';
-      });
-
+      
       chatModal.show();
     }
 
-    chatInput.oninput = () => {
-      if (!typingRef) return;
-      set(typingRef, true);
-      clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(() => remove(typingRef), 1500);
-    };
-
-    chatForm.onsubmit = async e => {
+    // Enviar mensaje
+    chatForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const text = chatInput.value.trim();
-      if (!text || !chatRef) return;
-      await push(chatRef, { from: currentUser.uid, text, createdAt: Date.now() });
-      chatInput.value = '';
-      remove(typingRef);
-    };
-
-    // Funciones de llamadas
-    btnCall.onclick = async () => {
-      if (!chatPartner) return;
+      const text = messageInput.value.trim();
       
-      try {
-        // Configurar modal de llamada saliente
-        callerAvatar.src = chatPartner.photo;
-        callerName.textContent = chatPartner.name;
-        callStatus.textContent = "Llamando...";
-        callTimer.classList.add('d-none');
-        btnAcceptCall.classList.add('d-none');
-        btnRejectCall.classList.add('d-none');
-        btnEndCall.classList.remove('d-none');
+      if (text && currentChat) {
+        const chatId = [currentUser.uid, currentChat.uid].sort().join('_');
+        const messagesRef = ref(db, `chats/${chatId}`);
         
-        callModal.show();
-        
-        // Iniciar llamada
-        await startCall(chatPartner.uid);
-      } catch (error) {
-        console.error("Error al iniciar llamada:", error);
-        showError("Error al iniciar la llamada");
-        endCall();
-      }
-    };
-
-    async function startCall(partnerUid) {
-      // Limpiar llamadas anteriores
-      await remove(ref(db, `calls/${currentUser.uid}`));
-      
-      // Configurar conexión peer
-      peerConnection = new RTCPeerConnection(servers);
-      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-      peerConnection.onicecandidate = e => {
-        if (e.candidate) {
-          push(ref(db, `calls/${partnerUid}/candidates`), {
-            candidate: e.candidate.candidate,
-            sdpMid: e.candidate.sdpMid,
-            sdpMLineIndex: e.candidate.sdpMLineIndex
-          });
-        }
-      };
-
-      peerConnection.ontrack = e => {
-        remoteAudio.srcObject = e.streams[0];
-        callConnected();
-      };
-
-      peerConnection.oniceconnectionstatechange = () => {
-        if (peerConnection.iceConnectionState === 'disconnected') {
-          endCall();
-        }
-      };
-
-      // Crear oferta
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-      
-      // Enviar oferta
-      set(ref(db, `calls/${partnerUid}/offer`), {
-        sdp: offer.sdp,
-        type: offer.type,
-        from: currentUser.uid,
-        callerName: currentUser.displayName,
-        callerPhoto: currentUser.photoURL,
-        timestamp: Date.now()
-      });
-
-      // Escuchar respuesta
-      listenForAnswer();
-      listenForCandidates();
-    }
-
-    function listenForAnswer() {
-      onValue(ref(db, `calls/${currentUser.uid}/answer`), async snap => {
-        if (!snap.exists() || !peerConnection) return;
-        
-        try {
-          const answer = snap.val();
-          await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-          remove(ref(db, `calls/${currentUser.uid}/answer`));
-        } catch (error) {
-          console.error("Error al procesar respuesta:", error);
-        }
-      });
-    }
-
-    function listenForCandidates() {
-      onValue(ref(db, `calls/${currentUser.uid}/candidates`), snap => {
-        if (!peerConnection) return;
-        
-        snap.forEach(async c => {
-          try {
-            const candidate = c.val();
-            await peerConnection.addIceCandidate(new RTCIceCandidate({
-              candidate: candidate.candidate,
-              sdpMid: candidate.sdpMid,
-              sdpMLineIndex: candidate.sdpMLineIndex
-            }));
-          } catch (error) {
-            console.error("Error al agregar candidato ICE:", error);
-          }
+        push(messagesRef, {
+          from: currentUser.uid,
+          text,
+          createdAt: Date.now()
         });
         
-        remove(ref(db, `calls/${currentUser.uid}/candidates`));
-      });
-    }
+        messageInput.value = '';
+      }
+    });
 
-    function listenForCalls() {
-      onValue(ref(db, `calls/${currentUser.uid}/offer`), async snap => {
-        if (!snap.exists() || !snap.val() || incomingCallData) return;
+    // Configurar listener de llamadas
+    function setupCallListener() {
+      const callRef = ref(db, `calls/${currentUser.uid}`);
+      
+      onValue(callRef, (snapshot) => {
+        const callData = snapshot.val();
         
-        const offer = snap.val();
-        
-        // Verificar si la oferta es reciente (últimos 30 segundos)
-        if (Date.now() - offer.timestamp > 30000) {
-          remove(ref(db, `calls/${currentUser.uid}/offer`));
-          return;
+        if (callData && callData.offer && !currentCall) {
+          currentCall = {
+            from: callData.offer.from,
+            offer: new RTCSessionDescription(callData.offer),
+            name: callData.offer.callerName,
+            photo: callData.offer.callerPhoto
+          };
+          
+          showIncomingCall();
         }
-        
-        incomingCallData = {
-          from: offer.from,
-          offer: new RTCSessionDescription(offer),
-          callerName: offer.callerName,
-          callerPhoto: offer.callerPhoto
-        };
-        
-        // Mostrar notificación de llamada entrante
-        showIncomingCall(incomingCallData);
       });
     }
 
-    function showIncomingCall(callData) {
-      // Configurar modal de llamada entrante
-      callerAvatar.src = callData.callerPhoto;
-      callerName.textContent = callData.callerName;
+    // Mostrar llamada entrante
+    function showIncomingCall() {
+      callAvatar.src = currentCall.photo;
+      callName.textContent = currentCall.name;
       callStatus.textContent = "Llamada entrante";
       callTimer.classList.add('d-none');
       btnAcceptCall.classList.remove('d-none');
       btnRejectCall.classList.remove('d-none');
       btnEndCall.classList.add('d-none');
       
-      // Reproducir tono de llamada
       ringtone.play();
-      
       callModal.show();
       
-      // Timeout para llamada no contestada (30 segundos)
+      // Timeout para llamada no contestada
       setTimeout(() => {
         if (callModal._isShown && !peerConnection) {
           endCall();
@@ -450,80 +338,157 @@
       }, 30000);
     }
 
-    btnAcceptCall.onclick = async () => {
-      if (!incomingCallData) return;
+    // Iniciar llamada
+    btnStartCall.addEventListener('click', async () => {
+      if (!currentChat) return;
+      
+      callAvatar.src = currentChat.photo;
+      callName.textContent = currentChat.name;
+      callStatus.textContent = "Llamando...";
+      callTimer.classList.add('d-none');
+      btnAcceptCall.classList.add('d-none');
+      btnRejectCall.classList.add('d-none');
+      btnEndCall.classList.remove('d-none');
+      
+      callModal.show();
       
       try {
-        ringtone.pause();
-        callStatus.textContent = "Conectando...";
-        
+        await startCall(currentChat.uid);
+      } catch (error) {
+        console.error("Error al iniciar llamada:", error);
+        endCall();
+      }
+    });
+
+    // Función para iniciar llamada
+    async function startCall(calleeId) {
+      // Limpiar llamadas anteriores
+      await remove(ref(db, `calls/${currentUser.uid}`));
+      
+      // Configurar conexión peer
+      peerConnection = new RTCPeerConnection(rtcConfig);
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+      
+      // Manejar candidatos ICE
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          push(ref(db, `calls/${calleeId}/candidates`), {
+            candidate: event.candidate.candidate,
+            sdpMid: event.candidate.sdpMid,
+            sdpMLineIndex: event.candidate.sdpMLineIndex
+          });
+        }
+      };
+      
+      // Cuando se recibe el stream remoto
+      peerConnection.ontrack = (event) => {
+        remoteAudio.srcObject = event.streams[0];
+        callConnected();
+      };
+      
+      // Crear oferta
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      
+      // Enviar oferta
+      await set(ref(db, `calls/${calleeId}/offer`), {
+        sdp: offer.sdp,
+        type: offer.type,
+        from: currentUser.uid,
+        callerName: currentUser.displayName,
+        callerPhoto: currentUser.photoURL,
+        timestamp: Date.now()
+      });
+      
+      // Escuchar respuesta
+      listenForAnswer(calleeId);
+    }
+
+    // Escuchar respuesta a la llamada
+    function listenForAnswer(callerId) {
+      const answerRef = ref(db, `calls/${currentUser.uid}/answer`);
+      
+      onValue(answerRef, async (snapshot) => {
+        if (snapshot.exists() && peerConnection) {
+          const answer = snapshot.val();
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+          remove(answerRef);
+        }
+      });
+    }
+
+    // Aceptar llamada
+    btnAcceptCall.addEventListener('click', async () => {
+      if (!currentCall) return;
+      
+      ringtone.pause();
+      callStatus.textContent = "Conectando...";
+      
+      try {
         // Configurar conexión peer
-        peerConnection = new RTCPeerConnection(servers);
+        peerConnection = new RTCPeerConnection(rtcConfig);
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-        peerConnection.onicecandidate = e => {
-          if (e.candidate) {
-            push(ref(db, `calls/${incomingCallData.from}/candidates`), {
-              candidate: e.candidate.candidate,
-              sdpMid: e.candidate.sdpMid,
-              sdpMLineIndex: e.candidate.sdpMLineIndex
+        
+        // Manejar candidatos ICE
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate) {
+            push(ref(db, `calls/${currentCall.from}/candidates`), {
+              candidate: event.candidate.candidate,
+              sdpMid: event.candidate.sdpMid,
+              sdpMLineIndex: event.candidate.sdpMLineIndex
             });
           }
         };
-
-        peerConnection.ontrack = e => {
-          remoteAudio.srcObject = e.streams[0];
+        
+        // Cuando se recibe el stream remoto
+        peerConnection.ontrack = (event) => {
+          remoteAudio.srcObject = event.streams[0];
           callConnected();
         };
-
-        peerConnection.oniceconnectionstatechange = () => {
-          if (peerConnection.iceConnectionState === 'disconnected') {
-            endCall();
-          }
-        };
-
+        
         // Procesar oferta
-        await peerConnection.setRemoteDescription(incomingCallData.offer);
+        await peerConnection.setRemoteDescription(currentCall.offer);
         
         // Crear respuesta
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
         
         // Enviar respuesta
-        set(ref(db, `calls/${incomingCallData.from}/answer`), {
+        await set(ref(db, `calls/${currentCall.from}/answer`), {
           sdp: answer.sdp,
           type: answer.type
         });
-
-        // Limpiar datos de llamada entrante
-        remove(ref(db, `calls/${currentUser.uid}/offer`));
-        incomingCallData = null;
         
-        // Escuchar candidatos ICE
-        listenForCandidates();
+        // Limpiar datos de llamada
+        await remove(ref(db, `calls/${currentUser.uid}/offer`));
+        currentCall = null;
       } catch (error) {
         console.error("Error al aceptar llamada:", error);
-        showError("Error al aceptar la llamada");
         endCall();
       }
-    };
+    });
 
-    btnRejectCall.onclick = endCall;
-    btnEndCall.onclick = endCall;
-
+    // Llamada conectada
     function callConnected() {
       callStatus.textContent = "En llamada";
       callTimer.classList.remove('d-none');
+      btnAcceptCall.classList.add('d-none');
+      btnRejectCall.classList.add('d-none');
+      btnEndCall.classList.remove('d-none');
+      
       startCallTimer();
     }
 
+    // Iniciar temporizador de llamada
     function startCallTimer() {
       callStartTime = Date.now();
       clearInterval(callInterval);
       callInterval = setInterval(updateCallTimer, 1000);
     }
 
+    // Actualizar temporizador
     function updateCallTimer() {
       const seconds = Math.floor((Date.now() - callStartTime) / 1000);
       const minutes = Math.floor(seconds / 60);
@@ -531,7 +496,12 @@
       callTimer.textContent = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
 
-    function endCall() {
+    // Rechazar/terminar llamada
+    btnRejectCall.addEventListener('click', endCall);
+    btnEndCall.addEventListener('click', endCall);
+
+    // Finalizar llamada
+    async function endCall() {
       // Detener medios
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
@@ -548,43 +518,29 @@
       remoteAudio.srcObject = null;
       ringtone.pause();
       callModal.hide();
-      btnHangup.classList.add('d-none');
       clearInterval(callInterval);
       
       // Limpiar datos de Firebase
       if (currentUser) {
-        remove(ref(db, `calls/${currentUser.uid}`));
+        await remove(ref(db, `calls/${currentUser.uid}`));
       }
       
-      if (chatPartner) {
-        remove(ref(db, `calls/${chatPartner.uid}`));
+      if (currentCall) {
+        await remove(ref(db, `calls/${currentCall.from}`));
+        currentCall = null;
       }
       
-      incomingCallData = null;
+      if (currentChat) {
+        await remove(ref(db, `calls/${currentChat.uid}`));
+      }
     }
 
-    // Funciones auxiliares
-    function showError(message) {
-      const alert = document.createElement('div');
-      alert.className = 'alert alert-danger alert-dismissible fade show';
-      alert.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      `;
-      document.getElementById('alertContainer').appendChild(alert);
-      setTimeout(() => alert.remove(), 5000);
-    }
-
-    // Inicialización
-    document.addEventListener('DOMContentLoaded', () => {
-      // Cerrar llamada si se cierra el modal manualmente
-      document.getElementById('callModal').addEventListener('hidden.bs.modal', () => {
-        if (peerConnection) {
-          endCall();
-        }
-      });
+    // Cerrar llamada si se cierra el modal
+    document.getElementById('callModal').addEventListener('hidden.bs.modal', () => {
+      if (peerConnection) {
+        endCall();
+      }
     });
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
