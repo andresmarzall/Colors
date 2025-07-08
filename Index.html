@@ -132,7 +132,7 @@
     // Importaciones Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getDatabase, ref, set, push, onValue, onDisconnect, remove, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, set, push, onValue, onDisconnect, remove, off, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     // Configuración Firebase
     const firebaseConfig = {
@@ -184,6 +184,9 @@
     let callStartTime = null;
     let callInterval = null;
     let currentCall = null;
+    let callListener = null;
+    let answerListener = null;
+    let candidatesListener = null;
 
     // Configuración WebRTC
     const rtcConfig = {
@@ -226,6 +229,7 @@
         currentUser = null;
         loginView.classList.remove('d-none');
         appView.classList.add('d-none');
+        cleanupCallListeners();
       }
     });
 
@@ -283,7 +287,7 @@
       
       // Cargar mensajes
       const chatId = generateChatId(currentUser.uid, uid);
-      const messagesRef = ref(db, `chats/${chatId}`);
+      const messagesRef = ref(db, `chats/${chatId}/messages`);
       
       onValue(messagesRef, (snapshot) => {
         chatMessages.innerHTML = '';
@@ -307,13 +311,13 @@
     // Mostrar mensaje en el chat
     function displayMessage(message) {
       const messageDiv = document.createElement('div');
-      messageDiv.className = `mb-2 ${message.from === currentUser.uid ? 'text-end' : 'text-start'}`;
+      messageDiv.className = `mb-2 ${message.senderId === currentUser.uid ? 'text-end' : 'text-start'}`;
       messageDiv.innerHTML = `
-        <span class="badge ${message.from === currentUser.uid ? 'bg-primary' : 'bg-secondary'}">
-          ${message.text}
+        <span class="badge ${message.senderId === currentUser.uid ? 'bg-primary' : 'bg-secondary'}">
+          ${message.content}
         </span>
         <div class="small text-muted">
-          ${new Date(message.createdAt).toLocaleTimeString()}
+          ${new Date(message.timestamp).toLocaleTimeString()}
         </div>
       `;
       chatMessages.appendChild(messageDiv);
@@ -322,16 +326,23 @@
     // Enviar mensaje
     chatForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const text = messageInput.value.trim();
+      const content = messageInput.value.trim();
       
-      if (text && currentChat) {
+      if (content && currentChat) {
         const chatId = generateChatId(currentUser.uid, currentChat.uid);
-        const messagesRef = ref(db, `chats/${chatId}`);
+        const messagesRef = ref(db, `chats/${chatId}/messages`);
         
         push(messagesRef, {
-          from: currentUser.uid,
-          text,
-          createdAt: Date.now()
+          senderId: currentUser.uid,
+          content,
+          timestamp: Date.now()
+        });
+        
+        // Agregar usuarios al chat si no existen
+        const usersRef = ref(db, `chats/${chatId}/users`);
+        update(usersRef, {
+          [currentUser.uid]: true,
+          [currentChat.uid]: true
         });
         
         messageInput.value = '';
@@ -340,22 +351,34 @@
 
     // Configurar listener de llamadas
     function setupCallListener() {
-      const callRef = ref(db, `calls/${currentUser.uid}`);
+      const callRef = ref(db, `calls`);
       
-      onValue(callRef, (snapshot) => {
-        const callData = snapshot.val();
-        
-        if (callData && callData.offer && !currentCall) {
-          currentCall = {
-            from: callData.offer.from,
-            offer: new RTCSessionDescription(callData.offer),
-            name: callData.offer.callerName,
-            photo: callData.offer.callerPhoto
-          };
+      callListener = onValue(callRef, (snapshot) => {
+        snapshot.forEach((callSnapshot) => {
+          const callId = callSnapshot.key;
+          const callData = callSnapshot.val();
           
-          showIncomingCall();
-        }
+          // Verificar si esta llamada es para el usuario actual
+          if (callData.users && callData.users[currentUser.uid] && callData.offer && !currentCall) {
+            currentCall = {
+              callId,
+              from: callData.offer.from,
+              offer: new RTCSessionDescription(callData.offer),
+              name: callData.offer.callerName,
+              photo: callData.offer.callerPhoto
+            };
+            
+            showIncomingCall();
+          }
+        });
       });
+    }
+
+    // Limpiar listeners de llamada
+    function cleanupCallListeners() {
+      if (callListener) off(callListener);
+      if (answerListener) off(answerListener);
+      if (candidatesListener) off(candidatesListener);
     }
 
     // Mostrar llamada entrante
@@ -403,8 +426,8 @@
 
     // Función para iniciar llamada
     async function startCall(calleeId) {
-      // Limpiar llamadas anteriores
-      await remove(ref(db, `calls/${currentUser.uid}`));
+      // Generar ID de llamada único
+      const callId = generateCallId(currentUser.uid, calleeId);
       
       // Configurar conexión peer
       peerConnection = new RTCPeerConnection(rtcConfig);
@@ -414,7 +437,7 @@
       // Manejar candidatos ICE
       peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-          push(ref(db, `calls/${calleeId}/candidates`), {
+          push(ref(db, `calls/${callId}/candidates`), {
             candidate: event.candidate.candidate,
             sdpMid: event.candidate.sdpMid,
             sdpMLineIndex: event.candidate.sdpMLineIndex
@@ -432,30 +455,69 @@
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
       
-      // Enviar oferta
-      await set(ref(db, `calls/${calleeId}/offer`), {
-        sdp: offer.sdp,
-        type: offer.type,
-        from: currentUser.uid,
-        callerName: currentUser.displayName,
-        callerPhoto: currentUser.photoURL,
-        timestamp: Date.now()
-      });
+      // Configurar estructura de llamada
+      const callData = {
+        offer: {
+          sdp: offer.sdp,
+          type: offer.type,
+          from: currentUser.uid,
+          callerName: currentUser.displayName,
+          callerPhoto: currentUser.photoURL,
+          timestamp: Date.now()
+        },
+        users: {
+          [currentUser.uid]: true,
+          [calleeId]: true
+        },
+        metadata: {
+          createdAt: Date.now(),
+          callerId: currentUser.uid,
+          calleeId: calleeId
+        }
+      };
+      
+      // Crear la llamada en Firebase
+      await set(ref(db, `calls/${callId}`), callData);
       
       // Escuchar respuesta
-      listenForAnswer(calleeId);
+      listenForAnswer(callId);
+      
+      // Escuchar candidatos del otro usuario
+      listenForCandidates(callId);
+    }
+
+    // Generar ID de llamada
+    function generateCallId(uid1, uid2) {
+      return `${uid1}_${uid2}_${Date.now()}`;
     }
 
     // Escuchar respuesta a la llamada
-    function listenForAnswer(callerId) {
-      const answerRef = ref(db, `calls/${currentUser.uid}/answer`);
+    function listenForAnswer(callId) {
+      const answerRef = ref(db, `calls/${callId}/answer`);
       
-      onValue(answerRef, async (snapshot) => {
+      answerListener = onValue(answerRef, async (snapshot) => {
         if (snapshot.exists() && peerConnection) {
           const answer = snapshot.val();
           await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-          remove(answerRef);
         }
+      });
+    }
+
+    // Escuchar candidatos ICE del otro usuario
+    function listenForCandidates(callId) {
+      const candidatesRef = ref(db, `calls/${callId}/candidates`);
+      
+      candidatesListener = onValue(candidatesRef, async (snapshot) => {
+        snapshot.forEach((childSnapshot) => {
+          const candidateData = childSnapshot.val();
+          if (peerConnection && candidateData.candidate) {
+            peerConnection.addIceCandidate(new RTCIceCandidate({
+              candidate: candidateData.candidate,
+              sdpMid: candidateData.sdpMid,
+              sdpMLineIndex: candidateData.sdpMLineIndex
+            }));
+          }
+        });
       });
     }
 
@@ -475,7 +537,7 @@
         // Manejar candidatos ICE
         peerConnection.onicecandidate = (event) => {
           if (event.candidate) {
-            push(ref(db, `calls/${currentCall.from}/candidates`), {
+            push(ref(db, `calls/${currentCall.callId}/candidates`), {
               candidate: event.candidate.candidate,
               sdpMid: event.candidate.sdpMid,
               sdpMLineIndex: event.candidate.sdpMLineIndex
@@ -497,13 +559,17 @@
         await peerConnection.setLocalDescription(answer);
         
         // Enviar respuesta
-        await set(ref(db, `calls/${currentCall.from}/answer`), {
+        await set(ref(db, `calls/${currentCall.callId}/answer`), {
           sdp: answer.sdp,
           type: answer.type
         });
         
+        // Actualizar estado de la llamada
+        await update(ref(db, `calls/${currentCall.callId}`), {
+          'metadata.answeredAt': Date.now()
+        });
+        
         // Limpiar datos de llamada
-        await remove(ref(db, `calls/${currentUser.uid}/offer`));
         currentCall = null;
       } catch (error) {
         console.error("Error al aceptar llamada:", error);
@@ -562,18 +628,24 @@
       clearInterval(callInterval);
       
       // Limpiar datos de Firebase
-      if (currentUser) {
-        await remove(ref(db, `calls/${currentUser.uid}`));
-      }
-      
       if (currentCall) {
-        await remove(ref(db, `calls/${currentCall.from}`));
+        await remove(ref(db, `calls/${currentCall.callId}`));
         currentCall = null;
       }
       
       if (currentChat) {
-        await remove(ref(db, `calls/${currentChat.uid}`));
+        // Buscar y eliminar cualquier llamada activa entre estos usuarios
+        const callsRef = ref(db, 'calls');
+        const snapshot = await get(callsRef);
+        snapshot.forEach((childSnapshot) => {
+          const callData = childSnapshot.val();
+          if (callData.users && callData.users[currentUser.uid] && callData.users[currentChat.uid]) {
+            remove(ref(db, `calls/${childSnapshot.key}`));
+          }
+        });
       }
+      
+      cleanupCallListeners();
     }
 
     // Cerrar llamada si se cierra el modal
