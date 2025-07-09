@@ -1,169 +1,188 @@
-<!DOCTYPE html><html lang="es"><head>
+<!DOCTYPE html>
+<html lang="es">
+<head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Tic Tac Toe Firebase</title>
+  <title>Tic Tac Toe Online</title>
   <style>
-    body { font-family: sans-serif; margin:0; padding:0; background:#f8f9fa;}
-    nav { background:#343a40; color:#fff; padding:1rem; display:flex; justify-content:space-between; align-items:center;}
-    #board { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; max-width:260px; margin:auto; margin-top:20px;}
-    .cell { background:#fff; border:1px solid #ccc; font-size:2rem; display:flex; align-items:center; justify-content:center; height:80px; cursor:pointer;}
-    .cell:hover { background:#e9ecef; }
-    .x { color:#0d6efd; } .o { color:#dc3545; }
-    #status, #players { text-align:center; margin-top:1rem; }
-    #btnPlay { display:block; margin:2rem auto; padding:0.7rem 1.5rem; font-size:1rem; }
-    button { cursor:pointer; }
-    @media(max-width:500px){ .cell {height:60px;} }
+    body { font-family: Arial; text-align: center; background: #f5f5f5; }
+    #board { display: grid; grid-template-columns: repeat(3, 100px); gap: 5px; justify-content: center; margin-top: 20px; }
+    .cell {
+      width: 100px; height: 100px; background: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2em; cursor: pointer; border: 1px solid #ccc;
+    }
+    #status { margin-top: 20px; font-weight: bold; }
+    button { margin: 10px; padding: 10px 20px; font-size: 1em; }
   </style>
 </head>
 <body>
-  <nav>
-    <div><strong>Tic Tac Toe 🔥</strong></div>
-    <div id="userArea">
-      <button id="btnLogin">Iniciar sesión</button>
-    </div>
-  </nav>
-  <main style="padding:1rem">
-    <button id="btnPlay" disabled>Jugar ahora</button>
-    <div id="status"></div>
-    <div id="players"><span id="p1">X: -</span> | <span id="p2">O: -</span></div>
-    <div id="board"></div>
-  </main>
+  <h1>Tic Tac Toe Online</h1>
+  <div id="auth">
+    <button id="login">Iniciar sesión con Google</button>
+    <button id="logout" style="display:none;">Cerrar sesión</button>
+    <p id="user"></p>
+  </div>
+  <button id="playBtn" disabled>Jugar ahora</button>
+  <div id="status">Inicia sesión para comenzar</div>
+  <div id="board" style="display:none;"></div>
 
   <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics-compat.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set, push, remove, update } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 
-  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
       authDomain: "llamapp-c8d6c.firebaseapp.com",
       databaseURL: "https://llamapp-c8d6c-default-rtdb.firebaseio.com",
       projectId: "llamapp-c8d6c",
-      storageBucket: "llamapp-c8d6c.firebasestorage.app",
+      storageBucket: "llamapp-c8d6c.appspot.com",
       messagingSenderId: "132119278171",
       appId: "1:132119278171:web:d11d942c8dc2f4ed9a057e",
       measurementId: "G-4VN80ZMS5L"
     };
-    firebase.initializeApp(firebaseConfig);
-    firebase.analytics();
 
-    const auth = firebase.auth();
-    const db = firebase.database();
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth();
+    const provider = new GoogleAuthProvider();
 
-    const userArea = document.getElementById("userArea");
-    const btnPlay = document.getElementById("btnPlay");
+    const loginBtn = document.getElementById("login");
+    const logoutBtn = document.getElementById("logout");
+    const userP = document.getElementById("user");
+    const playBtn = document.getElementById("playBtn");
     const status = document.getElementById("status");
-    const p1 = document.getElementById("p1");
-    const p2 = document.getElementById("p2");
-    const board = document.getElementById("board");
+    const boardDiv = document.getElementById("board");
 
-    let uid = null, name = "", roomId = null, symbol = null;
+    let currentUser = null;
+    let gameRef = null;
+    let playerSymbol = null;
+    let gameKey = null;
 
-    function renderUser(user) {
+    loginBtn.onclick = () => signInWithPopup(auth, provider);
+    logoutBtn.onclick = () => signOut(auth);
+
+    onAuthStateChanged(auth, (user) => {
       if (user) {
-        uid = user.uid;
-        name = user.displayName || "Jugador";
-        userArea.innerHTML = `${name} <button id="btnLogout">Salir</button>`;
-        document.getElementById("btnLogout").onclick = () => auth.signOut();
-        btnPlay.disabled = false;
+        currentUser = user;
+        userP.textContent = `Hola, ${user.displayName}`;
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-block";
+        playBtn.disabled = false;
+        status.textContent = "Presiona 'Jugar ahora' para buscar partida";
       } else {
-        uid = null;
-        name = "";
-        roomId = null;
-        symbol = null;
-        userArea.innerHTML = `<button id="btnLogin">Iniciar sesión</button>`;
-        document.getElementById("btnLogin").onclick = login;
-        btnPlay.disabled = true;
-        status.textContent = "";
-        board.innerHTML = "";
-        p1.textContent = "X: -";
-        p2.textContent = "O: -";
+        currentUser = null;
+        userP.textContent = "";
+        loginBtn.style.display = "inline-block";
+        logoutBtn.style.display = "none";
+        playBtn.disabled = true;
+        status.textContent = "Inicia sesión para comenzar";
       }
-    }
+    });
 
-    function login() {
-      auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(console.error);
-    }
-
-    auth.onAuthStateChanged(user => renderUser(user));
-
-    btnPlay.onclick = async () => {
-      if (!uid) return;
+    playBtn.onclick = async () => {
       status.textContent = "Buscando partida...";
-      btnPlay.disabled = true;
-      const rooms = (await db.ref("rooms").once("value")).val() || {};
-      for (const key in rooms) {
-        if (!rooms[key].player2) {
-          roomId = key;
-          symbol = "O";
-          await db.ref("rooms/" + key).update({ player2: { uid, name }, turn: "X" });
-          listenRoom();
-          return;
+      const queueRef = ref(db, "games");
+
+      onValue(queueRef, async (snapshot) => {
+        if (gameRef) return; // Ya unido
+
+        const games = snapshot.val();
+        let joined = false;
+
+        if (games) {
+          for (const key in games) {
+            const game = games[key];
+            if (game.playerO === "") {
+              gameRef = ref(db, "games/" + key);
+              gameKey = key;
+              playerSymbol = "O";
+              await update(gameRef, { playerO: currentUser.uid });
+              joined = true;
+              break;
+            }
+          }
         }
-      }
-      const ref = db.ref("rooms").push();
-      roomId = ref.key;
-      symbol = "X";
-      await ref.set({
-        player1: { uid, name },
-        board: Array(9).fill(""),
-        turn: null,
-        winner: null
-      });
-      listenRoom();
+
+        if (!joined) {
+          // Crear nueva sala
+          const newGame = {
+            playerX: currentUser.uid,
+            playerO: "",
+            board: Array(9).fill(""),
+            turn: "X",
+            winner: ""
+          };
+          const newRef = push(queueRef, newGame);
+          gameRef = newRef;
+          gameKey = newRef.key;
+          playerSymbol = "X";
+        }
+
+        initGameListener();
+        playBtn.style.display = "none";
+        boardDiv.style.display = "grid";
+        status.textContent = "Esperando rival...";
+      }, { onlyOnce: true });
     };
 
-    function listenRoom() {
-      db.ref("rooms/" + roomId).on("value", snap => {
-        const data = snap.val();
-        if (!data) return status.textContent = "Sala eliminada";
-        if (!data.player2) {
+    function initGameListener() {
+      onValue(gameRef, (snapshot) => {
+        const game = snapshot.val();
+        if (!game) return;
+
+        // Mostrar turno y estado
+        if (game.playerO !== "" && game.playerX !== "") {
+          status.textContent = game.winner
+            ? (game.winner === "E" ? "Empate" : `Ganó ${game.winner}`)
+            : (game.turn === playerSymbol ? "Tu turno" : "Turno rival");
+          drawBoard(game.board, game.turn, game.winner);
+        } else {
           status.textContent = "Esperando rival...";
-          return;
         }
-        p1.textContent = `X: ${data.player1.name}`;
-        p2.textContent = `O: ${data.player2.name}`;
-        status.textContent = data.winner ?
-          (data.winner === "T" ? "Empate 🤝" :
-           data.winner === symbol ? "¡Ganaste! 🏆" : "Perdiste 😢")
-          : `Turno de ${data.turn === symbol ? "tú" : "rival"} (${data.turn})`;
-        drawBoard(data.board, data.turn, data.winner);
       });
     }
 
-    function drawBoard(b, turn, winner) {
-      board.innerHTML = "";
-      b.forEach((v, i) => {
-        const cell = document.createElement("div");
-        cell.className = "cell" + (v === "X" ? " x" : v === "O" ? " o" : "");
-        cell.textContent = v;
-        if (!v && turn === symbol && !winner) {
-          cell.onclick = () => makeMove(i);
+    function drawBoard(board, turn, winner) {
+      boardDiv.innerHTML = "";
+      board.forEach((cell, idx) => {
+        const div = document.createElement("div");
+        div.className = "cell";
+        div.textContent = cell;
+        if (!cell && turn === playerSymbol && !winner) {
+          div.onclick = () => makeMove(idx, board);
         }
-        board.appendChild(cell);
+        boardDiv.appendChild(div);
       });
     }
 
-    async function makeMove(i) {
-      const ref = db.ref("rooms/" + roomId);
-      const snap = await ref.get();
-      const r = snap.val();
-      if (r.board[i] || r.turn !== symbol || r.winner) return;
-      r.board[i] = symbol;
-      const winner = checkWinner(r.board);
-      await ref.update({
-        board: r.board,
-        turn: winner ? r.turn : (r.turn === "X" ? "O" : "X"),
+    async function makeMove(index, board) {
+      if (!gameRef) return;
+      if (board[index] !== "") return;
+
+      board[index] = playerSymbol;
+      const winner = checkWinner(board);
+      const nextTurn = playerSymbol === "X" ? "O" : "X";
+      await update(gameRef, {
+        board: board,
+        turn: nextTurn,
         winner: winner
       });
     }
 
     function checkWinner(b) {
-      const w = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-      for (const [a,b1,c] of w) if (b[a] && b[a] === b[b1] && b[a] === b[c]) return b[a];
-      return b.includes("") ? null : "T";
+      const winPatterns = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+      ];
+      for (const [a,b1,c] of winPatterns) {
+        if (b[a] && b[a] === b[b1] && b[a] === b[c]) return b[a];
+      }
+      return b.includes("") ? "" : "E"; // "E" de Empate
     }
   </script>
-</body></html>
+</body>
+</html>
