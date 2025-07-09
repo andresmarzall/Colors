@@ -3,32 +3,57 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Tic Tac Toe Real 🔥</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin:0; padding:1rem; text-align:center; background:#f5f5f5; }
-    nav { margin-bottom:1rem; }
-    button { padding:0.6rem 1.2rem; font-size:1rem; margin:0.3rem; cursor:pointer; }
-    iframe { width:100%; max-width:400px; height:450px; border:none; margin-top:1rem; }
-  </style>
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics-compat.js"></script>
+  <title>Chat Global</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"/>
 </head>
-<body>
-  <nav>
-    <button id="login">Iniciar sesión (Google)</button>
-    <button id="logout" style="display:none;">Cerrar sesión</button>
-    <span id="user" style="margin-left:1rem;"></span>
-  </nav>
+<body class="bg-light">
+  <div class="container py-4">
+    <div id="alertContainer"></div>
 
-  <button id="startGame" disabled>Jugar vs otro jugador</button>
-  <div id="status" style="margin-top:1rem;"></div>
-  <div id="gameContainer"></div>
+    <!-- Login -->
+    <div id="loginView" class="row justify-content-center">
+      <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+          <div class="card-body text-center p-5">
+            <h2 class="mb-4">Chat Global</h2>
+            <p class="text-muted mb-4">Ingresa con Google</p>
+            <button id="btnLoginGoogle" class="btn btn-danger btn-lg w-100">
+              <i class="bi bi-google"></i> Continuar con Google
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <script>
-    // ✅ Tu configuración de Firebase
+    <!-- Chat Global View -->
+    <div id="chatView" class="d-none">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="bi bi-globe"></i> Chat Global</h2>
+        <div>
+          <img id="userAvatar" src="" class="rounded-circle me-2" width="40" height="40">
+          <button id="btnLogout" class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
+        </div>
+      </div>
+
+      <div class="card shadow">
+        <div class="card-body">
+          <div id="chatHistory" style="max-height: 400px; overflow-y: auto;" class="mb-3"></div>
+          <form id="chatForm" class="d-flex">
+            <input id="chatInput" class="form-control me-2" placeholder="Escribe un mensaje..." autocomplete="off" />
+            <button class="btn btn-primary" type="submit">Enviar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK + Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getDatabase, ref, set, push, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
       authDomain: "llamapp-c8d6c.firebaseapp.com",
@@ -40,76 +65,104 @@
       measurementId: "G-4VN80ZMS5L"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    firebase.analytics();
-    const auth = firebase.auth();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    const provider = new GoogleAuthProvider();
 
-    const loginBtn = document.getElementById('login');
-    const logoutBtn = document.getElementById('logout');
-    const userSpan = document.getElementById('user');
-    const startBtn = document.getElementById('startGame');
-    const statusDiv = document.getElementById('status');
-    const gameContainer = document.getElementById('gameContainer');
+    const loginView = document.getElementById('loginView');
+    const chatView = document.getElementById('chatView');
+    const btnLoginGoogle = document.getElementById('btnLoginGoogle');
+    const btnLogout = document.getElementById('btnLogout');
+    const userAvatar = document.getElementById('userAvatar');
+    const chatHistory = document.getElementById('chatHistory');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const alertContainer = document.getElementById('alertContainer');
 
-    // ⚠️ Reemplaza esto con tu API Key real de PaperGames
-    const apiKey = "demo-bb2e99b5-7981-4ad5-91b1-1f99aa4e6e0b";
+    let currentUser = null;
+    const chatRef = ref(db, 'chats/global');
 
-    loginBtn.onclick = () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider);
+    function notifySound() {
+      const ctx = new AudioContext();
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.15);
+    }
+
+    function showError(msg) {
+      const alert = document.createElement('div');
+      alert.className = 'alert alert-danger alert-dismissible fade show';
+      alert.innerHTML = `${msg}<button class="btn-close" data-bs-dismiss="alert"></button>`;
+      alertContainer.appendChild(alert);
+      setTimeout(() => alert.remove(), 5000);
+    }
+
+    btnLoginGoogle.onclick = async () => {
+      try { await signInWithPopup(auth, provider); }
+      catch (e) { showError("Error de login: " + e.message); }
     };
 
-    logoutBtn.onclick = () => {
-      auth.signOut();
+    btnLogout.onclick = async () => {
+      await signOut(auth);
     };
 
-    auth.onAuthStateChanged(user => {
+    onAuthStateChanged(auth, user => {
       if (user) {
-        userSpan.innerText = `Bienvenido, ${user.displayName}`;
-        loginBtn.style.display = 'none';
-        logoutBtn.style.display = 'inline-block';
-        startBtn.disabled = false;
+        currentUser = user;
+        loginView.classList.add('d-none');
+        chatView.classList.remove('d-none');
+        userAvatar.src = user.photoURL;
+
+        const userRef = ref(db, 'presence/' + user.uid);
+        set(userRef, { name: user.displayName, photo: user.photoURL });
+        onDisconnect(userRef).remove();
+
+        listenToMessages();
       } else {
-        userSpan.innerText = '';
-        loginBtn.style.display = 'inline-block';
-        logoutBtn.style.display = 'none';
-        startBtn.disabled = true;
-        gameContainer.innerHTML = '';
-        statusDiv.innerText = '';
+        currentUser = null;
+        loginView.classList.remove('d-none');
+        chatView.classList.add('d-none');
       }
     });
 
-    startBtn.onclick = async () => {
-      statusDiv.innerText = 'Creando partida…';
-      gameContainer.innerHTML = '';
-      try {
-        const response = await fetch('https://api.papergames.io/api/v2/game-session/player-vs-player', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Api-Key': apiKey
-          },
-          body: JSON.stringify({
-            gameType: "TicTacToe",
-            language: "es",
-            inactivityTimeout: 30,
-            timerTimeout: 120
-          })
+    function listenToMessages() {
+      onValue(chatRef, snap => {
+        chatHistory.innerHTML = '';
+        snap.forEach(msg => {
+          const m = msg.val();
+          const div = document.createElement('div');
+          div.className = m.uid === currentUser.uid ? 'text-end mb-2' : 'text-start mb-2';
+          div.innerHTML = `
+            <span class="badge ${m.uid === currentUser.uid ? 'bg-primary' : 'bg-secondary'}">${m.name}: ${m.text}</span><br>
+            <small class="text-muted">${new Date(m.createdAt).toLocaleTimeString()}</small>`;
+          chatHistory.appendChild(div);
+          if (m.uid !== currentUser.uid) notifySound();
         });
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+      });
+    }
 
-        if (!response.ok) throw new Error("Error al crear la partida");
-
-        const data = await response.json();
-        const user = firebase.auth().currentUser;
-        const playUrl = data.playUrl + `?username=${encodeURIComponent(user.displayName)}`;
-
-        statusDiv.innerText = 'Partida lista, esperando rival…';
-        gameContainer.innerHTML = `<iframe src="${playUrl}" allowfullscreen></iframe>`;
-      } catch (err) {
-        console.error(err);
-        statusDiv.innerText = 'Ocurrió un error al crear la partida.';
-      }
+    chatForm.onsubmit = async e => {
+      e.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text) return;
+      await push(chatRef, {
+        uid: currentUser.uid,
+        name: currentUser.displayName,
+        text,
+        createdAt: Date.now()
+      });
+      chatInput.value = '';
     };
   </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
