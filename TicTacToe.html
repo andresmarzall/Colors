@@ -3,36 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Tic Tac Toe Online</title>
+  <title>Tic Tac Toe Real 🔥</title>
   <style>
-    body { font-family: Arial; text-align: center; background: #f5f5f5; }
-    #board { display: grid; grid-template-columns: repeat(3, 100px); gap: 5px; justify-content: center; margin-top: 20px; }
-    .cell {
-      width: 100px; height: 100px; background: white;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2em; cursor: pointer; border: 1px solid #ccc;
-    }
-    #status { margin-top: 20px; font-weight: bold; }
-    button { margin: 10px; padding: 10px 20px; font-size: 1em; }
+    body { font-family: Arial, sans-serif; margin:0; padding:1rem; text-align:center; background:#f5f5f5; }
+    nav { margin-bottom:1rem; }
+    button { padding:0.6rem 1.2rem; font-size:1rem; margin:0.3rem; cursor:pointer; }
+    iframe { width:100%; max-width:400px; height:450px; border:none; margin-top:1rem; }
   </style>
-</head>
-<body>
-  <h1>Tic Tac Toe Online</h1>
-  <div id="auth">
-    <button id="login">Iniciar sesión con Google</button>
-    <button id="logout" style="display:none;">Cerrar sesión</button>
-    <p id="user"></p>
-  </div>
-  <button id="playBtn" disabled>Jugar ahora</button>
-  <div id="status">Inicia sesión para comenzar</div>
-  <div id="board" style="display:none;"></div>
 
   <!-- Firebase SDKs -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getDatabase, ref, onValue, set, push, remove, update } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics-compat.js"></script>
+</head>
+<body>
+  <nav>
+    <button id="login">Iniciar sesión (Google)</button>
+    <button id="logout" style="display:none;">Cerrar sesión</button>
+    <span id="user" style="margin-left:1rem;"></span>
+  </nav>
 
+  <button id="startGame" disabled>Jugar vs otro jugador</button>
+  <div id="status" style="margin-top:1rem;"></div>
+  <div id="gameContainer"></div>
+
+  <script>
+    // ✅ Tu configuración de Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
       authDomain: "llamapp-c8d6c.firebaseapp.com",
@@ -44,145 +40,76 @@
       measurementId: "G-4VN80ZMS5L"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth();
-    const provider = new GoogleAuthProvider();
+    firebase.initializeApp(firebaseConfig);
+    firebase.analytics();
+    const auth = firebase.auth();
 
-    const loginBtn = document.getElementById("login");
-    const logoutBtn = document.getElementById("logout");
-    const userP = document.getElementById("user");
-    const playBtn = document.getElementById("playBtn");
-    const status = document.getElementById("status");
-    const boardDiv = document.getElementById("board");
+    const loginBtn = document.getElementById('login');
+    const logoutBtn = document.getElementById('logout');
+    const userSpan = document.getElementById('user');
+    const startBtn = document.getElementById('startGame');
+    const statusDiv = document.getElementById('status');
+    const gameContainer = document.getElementById('gameContainer');
 
-    let currentUser = null;
-    let gameRef = null;
-    let playerSymbol = null;
-    let gameKey = null;
+    // ⚠️ Reemplaza esto con tu API Key real de PaperGames
+    const apiKey = "TU_PAPERGAMES_API_KEY";
 
-    loginBtn.onclick = () => signInWithPopup(auth, provider);
-    logoutBtn.onclick = () => signOut(auth);
+    loginBtn.onclick = () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider);
+    };
 
-    onAuthStateChanged(auth, (user) => {
+    logoutBtn.onclick = () => {
+      auth.signOut();
+    };
+
+    auth.onAuthStateChanged(user => {
       if (user) {
-        currentUser = user;
-        userP.textContent = `Hola, ${user.displayName}`;
-        loginBtn.style.display = "none";
-        logoutBtn.style.display = "inline-block";
-        playBtn.disabled = false;
-        status.textContent = "Presiona 'Jugar ahora' para buscar partida";
+        userSpan.innerText = `Bienvenido, ${user.displayName}`;
+        loginBtn.style.display = 'none';
+        logoutBtn.style.display = 'inline-block';
+        startBtn.disabled = false;
       } else {
-        currentUser = null;
-        userP.textContent = "";
-        loginBtn.style.display = "inline-block";
-        logoutBtn.style.display = "none";
-        playBtn.disabled = true;
-        status.textContent = "Inicia sesión para comenzar";
+        userSpan.innerText = '';
+        loginBtn.style.display = 'inline-block';
+        logoutBtn.style.display = 'none';
+        startBtn.disabled = true;
+        gameContainer.innerHTML = '';
+        statusDiv.innerText = '';
       }
     });
 
-    playBtn.onclick = async () => {
-      status.textContent = "Buscando partida...";
-      const queueRef = ref(db, "games");
+    startBtn.onclick = async () => {
+      statusDiv.innerText = 'Creando partida…';
+      gameContainer.innerHTML = '';
+      try {
+        const response = await fetch('https://api.papergames.io/api/v2/game-session/player-vs-player', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Api-Key': apiKey
+          },
+          body: JSON.stringify({
+            gameType: "TicTacToe",
+            language: "es",
+            inactivityTimeout: 30,
+            timerTimeout: 120
+          })
+        });
 
-      onValue(queueRef, async (snapshot) => {
-        if (gameRef) return; // Ya unido
+        if (!response.ok) throw new Error("Error al crear la partida");
 
-        const games = snapshot.val();
-        let joined = false;
+        const data = await response.json();
+        const user = firebase.auth().currentUser;
+        const playUrl = data.playUrl + `?username=${encodeURIComponent(user.displayName)}`;
 
-        if (games) {
-          for (const key in games) {
-            const game = games[key];
-            if (game.playerO === "") {
-              gameRef = ref(db, "games/" + key);
-              gameKey = key;
-              playerSymbol = "O";
-              await update(gameRef, { playerO: currentUser.uid });
-              joined = true;
-              break;
-            }
-          }
-        }
-
-        if (!joined) {
-          // Crear nueva sala
-          const newGame = {
-            playerX: currentUser.uid,
-            playerO: "",
-            board: Array(9).fill(""),
-            turn: "X",
-            winner: ""
-          };
-          const newRef = push(queueRef, newGame);
-          gameRef = newRef;
-          gameKey = newRef.key;
-          playerSymbol = "X";
-        }
-
-        initGameListener();
-        playBtn.style.display = "none";
-        boardDiv.style.display = "grid";
-        status.textContent = "Esperando rival...";
-      }, { onlyOnce: true });
-    };
-
-    function initGameListener() {
-      onValue(gameRef, (snapshot) => {
-        const game = snapshot.val();
-        if (!game) return;
-
-        // Mostrar turno y estado
-        if (game.playerO !== "" && game.playerX !== "") {
-          status.textContent = game.winner
-            ? (game.winner === "E" ? "Empate" : `Ganó ${game.winner}`)
-            : (game.turn === playerSymbol ? "Tu turno" : "Turno rival");
-          drawBoard(game.board, game.turn, game.winner);
-        } else {
-          status.textContent = "Esperando rival...";
-        }
-      });
-    }
-
-    function drawBoard(board, turn, winner) {
-      boardDiv.innerHTML = "";
-      board.forEach((cell, idx) => {
-        const div = document.createElement("div");
-        div.className = "cell";
-        div.textContent = cell;
-        if (!cell && turn === playerSymbol && !winner) {
-          div.onclick = () => makeMove(idx, board);
-        }
-        boardDiv.appendChild(div);
-      });
-    }
-
-    async function makeMove(index, board) {
-      if (!gameRef) return;
-      if (board[index] !== "") return;
-
-      board[index] = playerSymbol;
-      const winner = checkWinner(board);
-      const nextTurn = playerSymbol === "X" ? "O" : "X";
-      await update(gameRef, {
-        board: board,
-        turn: nextTurn,
-        winner: winner
-      });
-    }
-
-    function checkWinner(b) {
-      const winPatterns = [
-        [0,1,2], [3,4,5], [6,7,8],
-        [0,3,6], [1,4,7], [2,5,8],
-        [0,4,8], [2,4,6]
-      ];
-      for (const [a,b1,c] of winPatterns) {
-        if (b[a] && b[a] === b[b1] && b[a] === b[c]) return b[a];
+        statusDiv.innerText = 'Partida lista, esperando rival…';
+        gameContainer.innerHTML = `<iframe src="${playUrl}" allowfullscreen></iframe>`;
+      } catch (err) {
+        console.error(err);
+        statusDiv.innerText = 'Ocurrió un error al crear la partida.';
       }
-      return b.includes("") ? "" : "E"; // "E" de Empate
-    }
+    };
   </script>
 </body>
 </html>
