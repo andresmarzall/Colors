@@ -3,12 +3,91 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gestor de Inventario</title>
+  <title>Gestor de Inventario Empresarial</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
   <style>
     .table-actions {
-      width: 50px;
+      width: 120px;
       text-align: center;
+    }
+    .sidebar {
+      min-height: calc(100vh - 56px);
+      background-color: #f8f9fa;
+      border-right: 1px solid #dee2e6;
+    }
+    .sidebar .nav-link {
+      color: #333;
+      border-radius: 0.25rem;
+      margin: 0.1rem 0;
+    }
+    .sidebar .nav-link:hover, .sidebar .nav-link.active {
+      background-color: #e9ecef;
+      color: #0d6efd;
+    }
+    .sidebar .nav-link i {
+      margin-right: 8px;
+    }
+    .card-counter {
+      box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+      margin: 5px;
+      padding: 20px 10px;
+      border-radius: 5px;
+      transition: 0.3s;
+    }
+    .card-counter:hover {
+      box-shadow: 2px 2px 15px rgba(0, 0, 0, 0.2);
+    }
+    .card-counter.primary {
+      background-color: #007bff;
+      color: #FFF;
+    }
+    .card-counter.success {
+      background-color: #28a745;
+      color: #FFF;
+    }
+    .card-counter.warning {
+      background-color: #ffc107;
+      color: #212529;
+    }
+    .card-counter.danger {
+      background-color: #dc3545;
+      color: #FFF;
+    }
+    .card-counter .count-numbers {
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+    .card-counter .count-name {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+    .search-box {
+      position: relative;
+    }
+    .search-box i {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: #6c757d;
+    }
+    .search-box input {
+      padding-left: 35px;
+    }
+    .product-img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .low-stock {
+      background-color: #fff3cd !important;
+    }
+    .out-of-stock {
+      background-color: #f8d7da !important;
+    }
+    .cursor-pointer {
+      cursor: pointer;
     }
   </style>
 </head>
@@ -16,37 +95,384 @@
 
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
-    <a class="navbar-brand" href="#">InventarioApp</a>
+    <a class="navbar-brand" href="#">
+      <i class="bi bi-box-seam"></i> InventarioPro
+    </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
       <span class="navbar-toggler-icon"></span>
     </button>
-    <div class="collapse navbar-collapse justify-content-end" id="navbarContent">
+    <div class="collapse navbar-collapse justify-content-between" id="navbarContent">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="dashboardLink"><i class="bi bi-speedometer2"></i> Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="inventoryLink"><i class="bi bi-boxes"></i> Inventario</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="reportsLink"><i class="bi bi-graph-up"></i> Reportes</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" id="suppliersLink"><i class="bi bi-truck"></i> Proveedores</a>
+        </li>
+      </ul>
       <div id="userArea" class="d-flex align-items-center"></div>
     </div>
   </nav>
 
-  <div class="container mt-4" id="mainContent" style="display:none;">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h2 class="mb-0">Gestión de Inventario</h2>
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal" onclick="abrirNuevoProducto()">Nuevo Producto</button>
-    </div>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <div class="col-md-2 sidebar p-0 d-none d-md-block" id="sidebar">
+        <div class="p-3">
+          <div class="search-box mb-3">
+            <i class="bi bi-search"></i>
+            <input type="text" class="form-control" id="searchInput" placeholder="Buscar...">
+          </div>
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link active" href="#" id="sidebarDashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" id="sidebarInventory"><i class="bi bi-boxes"></i> Inventario</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" id="sidebarCategories"><i class="bi bi-tags"></i> Categorías</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" id="sidebarSuppliers"><i class="bi bi-truck"></i> Proveedores</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" id="sidebarOrders"><i class="bi bi-cart"></i> Órdenes</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" id="sidebarReports"><i class="bi bi-graph-up"></i> Reportes</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" id="sidebarSettings"><i class="bi bi-gear"></i> Configuración</a>
+            </li>
+          </ul>
+        </div>
+      </div>
 
-    <table class="table table-hover align-middle">
-      <thead class="table-dark">
-        <tr>
-          <th>Nombre</th>
-          <th>Cantidad</th>
-          <th>Precio</th>
-          <th class="table-actions">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="productosList"></tbody>
-    </table>
+      <!-- Main Content -->
+      <div class="col-md-10 ms-sm-auto px-4">
+        <!-- Dashboard Section -->
+        <div class="container mt-4" id="dashboardSection">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
+            <div class="d-flex">
+              <select class="form-select me-2" id="timePeriod">
+                <option value="today">Hoy</option>
+                <option value="week" selected>Esta semana</option>
+                <option value="month">Este mes</option>
+                <option value="year">Este año</option>
+              </select>
+              <button class="btn btn-primary" onclick="refreshDashboard()">
+                <i class="bi bi-arrow-clockwise"></i> Actualizar
+              </button>
+            </div>
+          </div>
+
+          <div class="row mb-4">
+            <div class="col-md-3">
+              <div class="card-counter primary">
+                <i class="bi bi-box-seam"></i>
+                <span class="count-numbers" id="totalProducts">0</span>
+                <span class="count-name">Productos</span>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card-counter success">
+                <i class="bi bi-currency-dollar"></i>
+                <span class="count-numbers" id="totalValue">$0</span>
+                <span class="count-name">Valor total</span>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card-counter warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span class="count-numbers" id="lowStock">0</span>
+                <span class="count-name">Bajo stock</span>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card-counter danger">
+                <i class="bi bi-x-circle"></i>
+                <span class="count-numbers" id="outOfStock">0</span>
+                <span class="count-name">Agotados</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-8">
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h5 class="card-title mb-0"><i class="bi bi-graph-up"></i> Movimiento de inventario</h5>
+                </div>
+                <div class="card-body">
+                  <canvas id="inventoryChart" height="250"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h5 class="card-title mb-0"><i class="bi bi-pie-chart"></i> Distribución por categoría</h5>
+                </div>
+                <div class="card-body">
+                  <canvas id="categoryChart" height="250"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0"><i class="bi bi-exclamation-triangle"></i> Productos con bajo stock</h5>
+              <button class="btn btn-sm btn-outline-primary" onclick="showAllProducts()">Ver todos</button>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Producto</th>
+                      <th>Categoría</th>
+                      <th>Stock</th>
+                      <th>Mínimo</th>
+                      <th>Proveedor</th>
+                      <th class="table-actions">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="lowStockList"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inventory Section -->
+        <div class="container mt-4" id="inventorySection" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-boxes"></i> Gestión de Inventario</h2>
+            <div class="d-flex">
+              <div class="search-box me-2">
+                <i class="bi bi-search"></i>
+                <input type="text" class="form-control" id="inventorySearch" placeholder="Buscar productos...">
+              </div>
+              <select class="form-select me-2" id="categoryFilter">
+                <option value="">Todas las categorías</option>
+              </select>
+              <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal" onclick="abrirNuevoProducto()">
+                <i class="bi bi-plus-lg"></i> Nuevo Producto
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Imagen</th>
+                      <th>Nombre</th>
+                      <th>Categoría</th>
+                      <th>Stock</th>
+                      <th>Precio</th>
+                      <th>Valor</th>
+                      <th class="table-actions">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="productosList"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card-footer d-flex justify-content-between align-items-center">
+              <div class="text-muted" id="inventorySummary">
+                Mostrando <span id="showingCount">0</span> de <span id="totalCount">0</span> productos
+              </div>
+              <nav>
+                <ul class="pagination mb-0" id="pagination">
+                  <li class="page-item disabled">
+                    <a class="page-link" href="#" tabindex="-1">Anterior</a>
+                  </li>
+                  <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                  <li class="page-item">
+                    <a class="page-link" href="#">Siguiente</a>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          </div>
+        </div>
+
+        <!-- Categories Section -->
+        <div class="container mt-4" id="categoriesSection" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-tags"></i> Gestión de Categorías</h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#categoryModal" onclick="abrirNuevaCategoria()">
+              <i class="bi bi-plus-lg"></i> Nueva Categoría
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Descripción</th>
+                      <th>Productos</th>
+                      <th class="table-actions">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="categoriesList"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Suppliers Section -->
+        <div class="container mt-4" id="suppliersSection" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-truck"></i> Gestión de Proveedores</h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#supplierModal" onclick="abrirNuevoProveedor()">
+              <i class="bi bi-plus-lg"></i> Nuevo Proveedor
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Contacto</th>
+                      <th>Teléfono</th>
+                      <th>Email</th>
+                      <th>Productos</th>
+                      <th class="table-actions">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="suppliersList"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div class="container mt-4" id="reportsSection" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-graph-up"></i> Reportes</h2>
+            <div class="d-flex">
+              <select class="form-select me-2" id="reportType">
+                <option value="inventory">Inventario</option>
+                <option value="movements">Movimientos</option>
+                <option value="sales">Ventas</option>
+                <option value="purchases">Compras</option>
+              </select>
+              <button class="btn btn-primary" onclick="generateReport()">
+                <i class="bi bi-file-earmark-arrow-down"></i> Generar Reporte
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <ul class="nav nav-tabs card-header-tabs" id="reportTabs">
+                <li class="nav-item">
+                  <a class="nav-link active" data-bs-toggle="tab" href="#summaryTab">Resumen</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" data-bs-toggle="tab" href="#dataTab">Datos</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" data-bs-toggle="tab" href="#chartsTab">Gráficos</a>
+                </li>
+              </ul>
+            </div>
+            <div class="card-body">
+              <div class="tab-content">
+                <div class="tab-pane fade show active" id="summaryTab">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <h5>Resumen del Inventario</h5>
+                      <div class="table-responsive">
+                        <table class="table table-sm">
+                          <tbody>
+                            <tr>
+                              <td><strong>Productos totales:</strong></td>
+                              <td id="reportTotalProducts">0</td>
+                            </tr>
+                            <tr>
+                              <td><strong>Valor total:</strong></td>
+                              <td id="reportTotalValue">$0.00</td>
+                            </tr>
+                            <tr>
+                              <td><strong>Productos con bajo stock:</strong></td>
+                              <td id="reportLowStock">0</td>
+                            </tr>
+                            <tr>
+                              <td><strong>Productos agotados:</strong></td>
+                              <td id="reportOutOfStock">0</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <h5>Distribución por categoría</h5>
+                      <canvas id="reportCategoryChart" height="200"></canvas>
+                    </div>
+                  </div>
+                </div>
+                <div class="tab-pane fade" id="dataTab">
+                  <div class="table-responsive">
+                    <table class="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>Producto</th>
+                          <th>Categoría</th>
+                          <th>Stock</th>
+                          <th>Precio</th>
+                          <th>Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody id="reportDataTable">
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="tab-pane fade" id="chartsTab">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <h5>Valor por categoría</h5>
+                      <canvas id="reportValueChart" height="250"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                      <h5>Stock por categoría</h5>
+                      <canvas id="reportStockChart" height="250"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Modal: Crear/Editar Producto -->
   <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
       <form id="productForm" class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="productModalLabel">Nuevo Producto</h5>
@@ -54,28 +480,185 @@
         </div>
         <div class="modal-body">
           <input type="hidden" id="productId" />
-          <div class="mb-3">
-            <label for="nombre" class="form-label">Nombre</label>
-            <input type="text" class="form-control" id="nombre" required />
-          </div>
-          <div class="mb-3">
-            <label for="cantidad" class="form-label">Cantidad</label>
-            <input type="number" class="form-control" id="cantidad" required />
-          </div>
-          <div class="mb-3">
-            <label for="precio" class="form-label">Precio</label>
-            <input type="number" class="form-control" id="precio" required />
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="nombre" class="form-label">Nombre *</label>
+                <input type="text" class="form-control" id="nombre" required />
+              </div>
+              <div class="mb-3">
+                <label for="codigo" class="form-label">Código/SKU</label>
+                <input type="text" class="form-control" id="codigo" />
+              </div>
+              <div class="mb-3">
+                <label for="descripcion" class="form-label">Descripción</label>
+                <textarea class="form-control" id="descripcion" rows="2"></textarea>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="cantidad" class="form-label">Cantidad en stock *</label>
+                  <input type="number" class="form-control" id="cantidad" required min="0" />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="minimo" class="form-label">Mínimo requerido</label>
+                  <input type="number" class="form-control" id="minimo" min="0" />
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="categoria" class="form-label">Categoría</label>
+                <select class="form-select" id="categoria">
+                  <option value="">Sin categoría</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="proveedor" class="form-label">Proveedor</label>
+                <select class="form-select" id="proveedor">
+                  <option value="">Sin proveedor</option>
+                </select>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="precio" class="form-label">Precio unitario *</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" id="precio" required min="0" step="0.01" />
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="costo" class="form-label">Costo unitario</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" id="costo" min="0" step="0.01" />
+                  </div>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="imagen" class="form-label">Imagen del producto</label>
+                <input type="file" class="form-control" id="imagen" accept="image/*" />
+                <small class="text-muted">Tamaño máximo: 2MB</small>
+                <div class="mt-2 text-center" id="imagePreviewContainer" style="display:none;">
+                  <img id="imagePreview" src="#" alt="Vista previa" class="img-thumbnail" style="max-height: 150px;">
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-success">Guardar</button>
+          <button type="submit" class="btn btn-success">Guardar Producto</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Modal: Confirmar Eliminación -->
+  <!-- Modal: Crear/Editar Categoría -->
+  <div class="modal fade" id="categoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="categoryForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="categoryModalLabel">Nueva Categoría</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="categoryId" />
+          <div class="mb-3">
+            <label for="categoryName" class="form-label">Nombre *</label>
+            <input type="text" class="form-control" id="categoryName" required />
+          </div>
+          <div class="mb-3">
+            <label for="categoryDescription" class="form-label">Descripción</label>
+            <textarea class="form-control" id="categoryDescription" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Guardar Categoría</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Crear/Editar Proveedor -->
+  <div class="modal fade" id="supplierModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="supplierForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="supplierModalLabel">Nuevo Proveedor</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="supplierId" />
+          <div class="mb-3">
+            <label for="supplierName" class="form-label">Nombre *</label>
+            <input type="text" class="form-control" id="supplierName" required />
+          </div>
+          <div class="mb-3">
+            <label for="supplierContact" class="form-label">Persona de contacto</label>
+            <input type="text" class="form-control" id="supplierContact" />
+          </div>
+          <div class="mb-3">
+            <label for="supplierPhone" class="form-label">Teléfono</label>
+            <input type="tel" class="form-control" id="supplierPhone" />
+          </div>
+          <div class="mb-3">
+            <label for="supplierEmail" class="form-label">Email</label>
+            <input type="email" class="form-control" id="supplierEmail" />
+          </div>
+          <div class="mb-3">
+            <label for="supplierAddress" class="form-label">Dirección</label>
+            <textarea class="form-control" id="supplierAddress" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Guardar Proveedor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Movimiento de Inventario -->
+  <div class="modal fade" id="movementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="movementForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="movementModalLabel">Registrar Movimiento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="movementProductId" />
+          <div class="mb-3">
+            <label for="movementType" class="form-label">Tipo de movimiento *</label>
+            <select class="form-select" id="movementType" required>
+              <option value="entrada">Entrada (Aumentar stock)</option>
+              <option value="salida">Salida (Reducir stock)</option>
+              <option value="ajuste">Ajuste de inventario</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="movementQuantity" class="form-label">Cantidad *</label>
+            <input type="number" class="form-control" id="movementQuantity" required min="1" />
+          </div>
+          <div class="mb-3">
+            <label for="movementReason" class="form-label">Razón/Motivo</label>
+            <textarea class="form-control" id="movementReason" rows="2"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="movementDate" class="form-label">Fecha</label>
+            <input type="datetime-local" class="form-control" id="movementDate" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Registrar Movimiento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<!-- Modal: Confirmar Eliminación -->
   <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -84,7 +667,10 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
-          ¿Estás seguro de que deseas eliminar este producto?
+          <p id="deleteMessage">¿Estás seguro de que deseas eliminar este elemento?</p>
+          <div class="alert alert-warning mt-2" id="deleteWarning" style="display:none;">
+            <i class="bi bi-exclamation-triangle"></i> Esta acción no se puede deshacer.
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -95,11 +681,13 @@
   </div>
 
   <!-- Firebase y lógica -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import { getDatabase, ref, push, set, onValue, remove, update, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCBZQdrEmpHpoRk1Bwpa6TsjAJt2K246A8",
@@ -116,13 +704,26 @@
     const analytics = getAnalytics(app);
     const auth = getAuth();
     const db = getDatabase();
+    const storage = getStorage();
     const provider = new GoogleAuthProvider();
 
-    const userArea = document.getElementById("userArea");
-    const mainContent = document.getElementById("mainContent");
-    const productosList = document.getElementById("productosList");
+    // Variables globales
     let currentUser = null;
-    let productoAEliminar = null;
+    let elementoAEliminar = null;
+    let tipoElementoAEliminar = null;
+    let inventoryChart = null;
+    let categoryChart = null;
+    let reportCategoryChart = null;
+    let reportValueChart = null;
+    let reportStockChart = null;
+    let currentPage = 1;
+    const itemsPerPage = 10;
+
+    // Inicialización de la aplicación
+    document.addEventListener('DOMContentLoaded', () => {
+      initNavigation();
+      initEventListeners();
+    });
 
     // Login y logout
     function login() {
@@ -136,76 +737,422 @@
     window.logout = logout;
 
     onAuthStateChanged(auth, (user) => {
+      const userArea = document.getElementById("userArea");
       userArea.innerHTML = "";
+      
       if (user) {
         currentUser = user;
         userArea.innerHTML = `
-          <span class="text-white me-3">${user.displayName}</span>
-          <button class="btn btn-outline-light btn-sm" onclick="logout()">Cerrar sesión</button>
+          <div class="dropdown">
+            <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+              <i class="bi bi-person-circle me-1"></i> ${user.displayName || user.email}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="#"><i class="bi bi-person"></i> Mi perfil</a></li>
+              <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Configuración</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="#" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</a></li>
+            </ul>
+          </div>
         `;
-        mainContent.style.display = "block";
-        cargarProductos();
+        
+        showSection('dashboardSection');
+        cargarDatosIniciales();
       } else {
         currentUser = null;
-        mainContent.style.display = "none";
-        userArea.innerHTML = `<button class="btn btn-outline-light btn-sm" onclick="login()">Iniciar sesión con Google</button>`;
+        userArea.innerHTML = `
+          <button class="btn btn-outline-light" onclick="login()">
+            <i class="bi bi-google me-1"></i> Iniciar sesión
+          </button>
+        `;
       }
     });
 
-    // Formulario y modales
-    const form = document.getElementById("productForm");
-    const productId = document.getElementById("productId");
-    const nombre = document.getElementById("nombre");
-    const cantidad = document.getElementById("cantidad");
-    const precio = document.getElementById("precio");
-    const productModal = new bootstrap.Modal(document.getElementById("productModal"));
-    const confirmDeleteModal = new bootstrap.Modal(document.getElementById("confirmDeleteModal"));
-    const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+    // Navegación
+    function initNavigation() {
+      // Navegación superior
+      document.getElementById('dashboardLink').addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection('dashboardSection');
+      });
+      
+      document.getElementById('inventoryLink').addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection('inventorySection');
+      });
+      
+      document.getElementById('reportsLink').addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection('reportsSection');
+      });
+      
+      document.getElementById('suppliersLink').addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection('suppliersSection');
+      });
 
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
+      // Sidebar
+      document.getElementById('sidebarDashboard').addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection('dashboardSection');
+      });
+      
+      document.getElementById('sidebarInventory').addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection('inventorySection');
+      });
+      
+      document.getElementById('sidebarCategories').addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection('categoriesSection');
+      });
+      
+      document.getElementById('sidebarSuppliers').addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection('suppliersSection');
+      });
+      
+      document.getElementById('sidebarReports').addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection('reportsSection');
+      });
+    }
+
+    function showSection(sectionId) {
+      // Ocultar todas las secciones
+      document.querySelectorAll('.container[id$="Section"]').forEach(section => {
+        section.style.display = 'none';
+      });
+      
+      // Mostrar la sección seleccionada
+      document.getElementById(sectionId).style.display = 'block';
+      
+      // Actualizar la navegación activa
+      updateActiveNav(sectionId);
+      
+      // Cargar datos específicos si es necesario
+      switch(sectionId) {
+        case 'dashboardSection':
+          refreshDashboard();
+          break;
+        case 'inventorySection':
+          cargarProductos();
+          break;
+        case 'categoriesSection':
+          cargarCategorias();
+          break;
+        case 'suppliersSection':
+          cargarProveedores();
+          break;
+        case 'reportsSection':
+          generateReport();
+          break;
+      }
+    }
+
+function updateActiveNav(sectionId) {
+      // Actualizar navegación superior
+      const navLinks = document.querySelectorAll('#navbarContent .nav-link');
+      navLinks.forEach(link => link.classList.remove('active'));
+      
+      switch(sectionId) {
+        case 'dashboardSection':
+          document.getElementById('dashboardLink').classList.add('active');
+          break;
+        case 'inventorySection':
+          document.getElementById('inventoryLink').classList.add('active');
+          break;
+        case 'reportsSection':
+          document.getElementById('reportsLink').classList.add('active');
+          break;
+        case 'suppliersSection':
+          document.getElementById('suppliersLink').classList.add('active');
+          break;
+      }
+
+      // Actualizar sidebar
+      const sidebarLinks = document.querySelectorAll('#sidebar .nav-link');
+      sidebarLinks.forEach(link => link.classList.remove('active'));
+      
+      switch(sectionId) {
+        case 'dashboardSection':
+          document.getElementById('sidebarDashboard').classList.add('active');
+          break;
+        case 'inventorySection':
+          document.getElementById('sidebarInventory').classList.add('active');
+          break;
+        case 'categoriesSection':
+          document.getElementById('sidebarCategories').classList.add('active');
+          break;
+        case 'suppliersSection':
+          document.getElementById('sidebarSuppliers').classList.add('active');
+          break;
+        case 'reportsSection':
+          document.getElementById('sidebarReports').classList.add('active');
+          break;
+      }
+    }
+
+    // Event listeners
+    function initEventListeners() {
+      // Formulario de producto
+      document.getElementById('productForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        guardarProducto();
+      });
+
+      // Formulario de categoría
+      document.getElementById('categoryForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        guardarCategoria();
+      });
+
+      // Formulario de proveedor
+      document.getElementById('supplierForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        guardarProveedor();
+      });
+
+      // Formulario de movimiento
+      document.getElementById('movementForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        registrarMovimiento();
+      });
+
+      // Confirmar eliminación
+      document.getElementById('confirmDeleteBtn').addEventListener('click', confirmarEliminacion);
+
+      // Búsqueda en inventario
+      document.getElementById('inventorySearch').addEventListener('input', (e) => {
+        cargarProductos(e.target.value);
+      });
+
+      // Filtro por categoría
+      document.getElementById('categoryFilter').addEventListener('change', (e) => {
+        cargarProductos(null, e.target.value);
+      });
+
+      // Vista previa de imagen
+      document.getElementById('imagen').addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            document.getElementById('imagePreview').src = e.target.result;
+            document.getElementById('imagePreviewContainer').style.display = 'block';
+          }
+          reader.readAsDataURL(this.files[0]);
+        }
+      });
+    }
+
+    // Cargar datos iniciales
+    function cargarDatosIniciales() {
+      cargarCategoriasParaSelect();
+      cargarProveedoresParaSelect();
+    }
+
+    // Funciones para productos
+    window.abrirNuevoProducto = () => {
+      const form = document.getElementById('productForm');
+      form.reset();
+      document.getElementById('productId').value = '';
+      document.getElementById('productModalLabel').textContent = 'Nuevo Producto';
+      document.getElementById('imagePreviewContainer').style.display = 'none';
+    };
+
+    function guardarProducto() {
+      const productId = document.getElementById('productId').value;
+      const nombre = document.getElementById('nombre').value;
+      const codigo = document.getElementById('codigo').value;
+      const descripcion = document.getElementById('descripcion').value;
+      const cantidad = parseInt(document.getElementById('cantidad').value);
+      const minimo = parseInt(document.getElementById('minimo').value) || 0;
+      const precio = parseFloat(document.getElementById('precio').value);
+      const costo = parseFloat(document.getElementById('costo').value) || 0;
+      const categoria = document.getElementById('categoria').value;
+      const proveedor = document.getElementById('proveedor').value;
+      const imagen = document.getElementById('imagen').files[0];
+
       const producto = {
-        nombre: nombre.value,
-        cantidad: Number(cantidad.value),
-        precio: Number(precio.value),
+        nombre,
+        codigo,
+        descripcion,
+        cantidad,
+        minimo,
+        precio,
+        costo,
+        categoria,
+        proveedor,
+        fechaActualizacion: new Date().toISOString()
       };
 
       const userRef = `inventario/${currentUser.uid}/productos`;
 
-      if (productId.value) {
-        update(ref(db, `${userRef}/${productId.value}`), producto);
+      if (productId) {
+        // Actualizar producto existente
+        update(ref(db, `${userRef}/${productId}`), producto)
+          .then(() => {
+            if (imagen) {
+              subirImagenProducto(imagen, productId);
+            }
+            mostrarMensaje('success', 'Producto actualizado correctamente');
+          })
+          .catch(console.error);
       } else {
+        // Crear nuevo producto
         const newRef = push(ref(db, userRef));
-        set(newRef, producto);
+        set(newRef, producto)
+          .then(() => {
+            if (imagen) {
+              subirImagenProducto(imagen, newRef.key);
+            }
+            mostrarMensaje('success', 'Producto creado correctamente');
+          })
+          .catch(console.error);
       }
 
-      form.reset();
-      productId.value = "";
-      productModal.hide();
-    });
+      document.getElementById('productModal').querySelector('.btn-close').click();
+    }
 
-    function cargarProductos() {
+    function subirImagenProducto(imagen, productId) {
+      const storageReference = storageRef(storage, `productos/${currentUser.uid}/${productId}`);
+      
+      uploadBytes(storageReference, imagen).then(() => {
+        getDownloadURL(storageReference).then((url) => {
+          const userRef = `inventario/${currentUser.uid}/productos/${productId}`;
+          update(ref(db, userRef), { imagen: url });
+        });
+      }).catch(console.error);
+    }
+
+    window.editarProducto = (id, nombre, codigo, descripcion, cantidad, minimo, precio, costo, categoria, proveedor, imagen) => {
+      document.getElementById('productId').value = id;
+      document.getElementById('nombre').value = nombre || '';
+      document.getElementById('codigo').value = codigo || '';
+      document.getElementById('descripcion').value = descripcion || '';
+      document.getElementById('cantidad').value = cantidad || 0;
+      document.getElementById('minimo').value = minimo || 0;
+      document.getElementById('precio').value = precio || 0;
+      document.getElementById('costo').value = costo || 0;
+      document.getElementById('categoria').value = categoria || '';
+      document.getElementById('proveedor').value = proveedor || '';
+      
+      const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+      const imagePreview = document.getElementById('imagePreview');
+      
+      if (imagen) {
+        imagePreview.src = imagen;
+        imagePreviewContainer.style.display = 'block';
+      } else {
+        imagePreviewContainer.style.display = 'none';
+      }
+      
+      document.getElementById('productModalLabel').textContent = 'Editar Producto';
+      new bootstrap.Modal(document.getElementById('productModal')).show();
+    };
+
+    function cargarProductos(searchTerm = null, categoryFilter = null) {
+      const productosList = document.getElementById('productosList');
+      productosList.innerHTML = '<tr><td colspan="7" class="text-center">Cargando productos...</td></tr>';
+      
       const userRef = `inventario/${currentUser.uid}/productos`;
       const productosRef = ref(db, userRef);
-
+      
       onValue(productosRef, (snapshot) => {
-        productosList.innerHTML = "";
+        let productos = [];
+        let totalValue = 0;
+        let totalProducts = 0;
+        
         snapshot.forEach((child) => {
           const data = child.val();
           const key = child.key;
+
+     // Filtrar por término de búsqueda si existe
+          if (searchTerm && !data.nombre.toLowerCase().includes(searchTerm.toLowerCase())) {
+            return;
+          }
+          
+          // Filtrar por categoría si existe
+          if (categoryFilter && data.categoria !== categoryFilter) {
+            return;
+          }
+          
+          const valor = (data.cantidad || 0) * (data.precio || 0);
+          totalValue += valor;
+          totalProducts++;
+          
+          productos.push({
+            key,
+            ...data,
+            valor
+          });
+        });
+        
+        // Actualizar resumen
+        document.getElementById('showingCount').textContent = productos.length;
+        document.getElementById('totalCount').textContent = totalProducts;
+        
+        // Ordenar por nombre
+        productos.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        
+        // Paginación
+        const totalPages = Math.ceil(productos.length / itemsPerPage);
+        updatePagination(totalPages);
+        
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const paginatedProducts = productos.slice(startIndex, startIndex + itemsPerPage);
+        
+        // Mostrar productos
+        if (paginatedProducts.length === 0) {
+          productosList.innerHTML = '<tr><td colspan="7" class="text-center">No se encontraron productos</td></tr>';
+          return;
+        }
+        
+        productosList.innerHTML = '';
+        
+        paginatedProducts.forEach(producto => {
+          const rowClass = producto.cantidad <= 0 ? 'out-of-stock' : 
+                         (producto.minimo && producto.cantidad <= producto.minimo) ? 'low-stock' : '';
+          
           productosList.innerHTML += `
-            <tr>
-              <td>${data.nombre}</td>
-              <td>${data.cantidad}</td>
-              <td>$${data.precio.toFixed(2)}</td>
+            <tr class="${rowClass}">
+              <td>
+                ${producto.imagen ? 
+                  `<img src="${producto.imagen}" class="product-img me-2" alt="${producto.nombre}">` : 
+                  `<div class="product-img bg-light text-center me-2 d-inline-flex align-items-center justify-content-center">
+                    <i class="bi bi-box-seam fs-4 text-muted"></i>
+                  </div>`}
+              </td>
+              <td>
+                <div class="fw-bold">${producto.nombre}</div>
+                ${producto.codigo ? `<small class="text-muted">${producto.codigo}</small>` : ''}
+              </td>
+              <td>${producto.categoria || 'Sin categoría'}</td>
+              <td>
+                ${producto.cantidad}
+                ${producto.minimo ? `<small class="d-block text-muted">Mín: ${producto.minimo}</small>` : ''}
+              </td>
+              <td>$${producto.precio.toFixed(2)}</td>
+              <td>$${producto.valor.toFixed(2)}</td>
               <td class="text-center">
                 <div class="dropdown">
                   <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    ⚙️
+                    <i class="bi bi-gear"></i>
                   </button>
                   <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#" onclick="editarProducto('${key}', '${data.nombre}', ${data.cantidad}, ${data.precio})">Editar</a></li>
-                    <li><a class="dropdown-item text-danger" href="#" onclick="prepararEliminar('${key}')">Eliminar</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="editarProducto('${producto.key}', '${producto.nombre}', '${producto.codigo || ''}', '${producto.descripcion || ''}', ${producto.cantidad}, ${producto.minimo || 0}, ${producto.precio}, ${producto.costo || 0}, '${producto.categoria || ''}', '${producto.proveedor || ''}', '${producto.imagen || ''}')">
+                      <i class="bi bi-pencil"></i> Editar
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="prepararEliminar('${producto.key}', 'producto', '¿Estás seguro de eliminar el producto ${producto.nombre}?')">
+                      <i class="bi bi-trash"></i> Eliminar
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="abrirMovimiento('${producto.key}', '${producto.nombre}')">
+                      <i class="bi bi-arrow-left-right"></i> Movimiento
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" onclick="verDetalleProducto('${producto.key}')">
+                      <i class="bi bi-info-circle"></i> Detalles
+                    </a></li>
                   </ul>
                 </div>
               </td>
@@ -215,36 +1162,927 @@
       });
     }
 
-    // Crear nuevo
-    window.abrirNuevoProducto = () => {
-      form.reset();
-      productId.value = "";
-      document.getElementById("productModalLabel").textContent = "Nuevo Producto";
-    };
-
-    // Editar
-    window.editarProducto = (id, nombreVal, cantidadVal, precioVal) => {
-      productId.value = id;
-      nombre.value = nombreVal;
-      cantidad.value = cantidadVal;
-      precio.value = precioVal;
-      document.getElementById("productModalLabel").textContent = "Editar Producto";
-      productModal.show();
-    };
-
-    // Eliminar
-    window.prepararEliminar = (id) => {
-      productoAEliminar = id;
-      confirmDeleteModal.show();
-    };
-
-    confirmDeleteBtn.addEventListener("click", () => {
-      const userRef = `inventario/${currentUser.uid}/productos/${productoAEliminar}`;
-      remove(ref(db, userRef)).then(() => {
-        confirmDeleteModal.hide();
-        productoAEliminar = null;
+    function updatePagination(totalPages) {
+      const pagination = document.getElementById('pagination');
+      pagination.innerHTML = '';
+      
+      // Botón Anterior
+      const prevItem = document.createElement('li');
+      prevItem.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+      prevItem.innerHTML = `<a class="page-link" href="#">Anterior</a>`;
+      prevItem.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentPage > 1) {
+          currentPage--;
+          cargarProductos();
+        }
       });
-    });
+      pagination.appendChild(prevItem);
+      
+      // Números de página
+      const maxVisiblePages = 5;
+      let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+      
+      if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+      
+      if (startPage > 1) {
+        const firstItem = document.createElement('li');
+        firstItem.className = 'page-item';
+        firstItem.innerHTML = `<a class="page-link" href="#">1</a>`;
+        firstItem.addEventListener('click', (e) => {
+          e.preventDefault();
+          currentPage = 1;
+          cargarProductos();
+        });
+        pagination.appendChild(firstItem);
+        
+        if (startPage > 2) {
+          const ellipsisItem = document.createElement('li');
+          ellipsisItem.className = 'page-item disabled';
+          ellipsisItem.innerHTML = `<span class="page-link">...</span>`;
+          pagination.appendChild(ellipsisItem);
+        }
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        const pageItem = document.createElement('li');
+        pageItem.className = `page-item ${i === currentPage ? 'active' : ''}`;
+        pageItem.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+        pageItem.addEventListener('click', (e) => {
+          e.preventDefault();
+          currentPage = i;
+          cargarProductos();
+        });
+        pagination.appendChild(pageItem);
+      }
+      
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+          const ellipsisItem = document.createElement('li');
+          ellipsisItem.className = 'page-item disabled';
+          ellipsisItem.innerHTML = `<span class="page-link">...</span>`;
+          pagination.appendChild(ellipsisItem);
+        }
+        
+        const lastItem = document.createElement('li');
+        lastItem.className = 'page-item';
+        lastItem.innerHTML = `<a class="page-link" href="#">${totalPages}</a>`;
+        lastItem.addEventListener('click', (e) => {
+          e.preventDefault();
+          currentPage = totalPages;
+          cargarProductos();
+        });
+        pagination.appendChild(lastItem);
+      }
+
+    // Botón Siguiente
+      const nextItem = document.createElement('li');
+      nextItem.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+      nextItem.innerHTML = `<a class="page-link" href="#">Siguiente</a>`;
+      nextItem.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentPage < totalPages) {
+          currentPage++;
+          cargarProductos();
+        }
+      });
+      pagination.appendChild(nextItem);
+    }
+
+    // Funciones para categorías
+    window.abrirNuevaCategoria = () => {
+      const form = document.getElementById('categoryForm');
+      form.reset();
+      document.getElementById('categoryId').value = '';
+      document.getElementById('categoryModalLabel').textContent = 'Nueva Categoría';
+    };
+
+    function guardarCategoria() {
+      const categoryId = document.getElementById('categoryId').value;
+      const name = document.getElementById('categoryName').value;
+      const description = document.getElementById('categoryDescription').value;
+
+      const categoria = {
+        nombre: name,
+        descripcion: description,
+        fechaActualizacion: new Date().toISOString()
+      };
+
+      const userRef = `inventario/${currentUser.uid}/categorias`;
+
+      if (categoryId) {
+        update(ref(db, `${userRef}/${categoryId}`), categoria)
+          .then(() => mostrarMensaje('success', 'Categoría actualizada correctamente'))
+          .catch(console.error);
+      } else {
+        const newRef = push(ref(db, userRef));
+        set(newRef, categoria)
+          .then(() => mostrarMensaje('success', 'Categoría creada correctamente'))
+          .catch(console.error);
+      }
+
+      document.getElementById('categoryModal').querySelector('.btn-close').click();
+    }
+
+    function cargarCategorias() {
+      const categoriesList = document.getElementById('categoriesList');
+      categoriesList.innerHTML = '<tr><td colspan="4" class="text-center">Cargando categorías...</td></tr>';
+      
+      const userRef = `inventario/${currentUser.uid}/categorias`;
+      const categoriasRef = ref(db, userRef);
+      
+      onValue(categoriasRef, (snapshot) => {
+        if (!snapshot.exists()) {
+          categoriesList.innerHTML = '<tr><td colspan="4" class="text-center">No hay categorías registradas</td></tr>';
+          return;
+        }
+        
+        categoriesList.innerHTML = '';
+        
+        snapshot.forEach((child) => {
+          const data = child.val();
+          const key = child.key;
+          
+          categoriesList.innerHTML += `
+            <tr>
+              <td class="fw-bold">${data.nombre}</td>
+              <td>${data.descripcion || 'Sin descripción'}</td>
+              <td>0</td> <!-- Aquí iría el conteo de productos -->
+              <td class="text-center">
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-gear"></i>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="editarCategoria('${key}', '${data.nombre}', '${data.descripcion || ''}')">
+                      <i class="bi bi-pencil"></i> Editar
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="prepararEliminar('${key}', 'categoria', '¿Estás seguro de eliminar la categoría ${data.nombre}?')">
+                      <i class="bi bi-trash"></i> Eliminar
+                    </a></li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+      });
+    }
+
+    window.editarCategoria = (id, nombre, descripcion) => {
+      document.getElementById('categoryId').value = id;
+      document.getElementById('categoryName').value = nombre || '';
+      document.getElementById('categoryDescription').value = descripcion || '';
+      document.getElementById('categoryModalLabel').textContent = 'Editar Categoría';
+      new bootstrap.Modal(document.getElementById('categoryModal')).show();
+    };
+
+    function cargarCategoriasParaSelect() {
+      const categoriaSelect = document.getElementById('categoria');
+      const categoryFilter = document.getElementById('categoryFilter');
+      
+      const userRef = `inventario/${currentUser.uid}/categorias`;
+      const categoriasRef = ref(db, userRef);
+      
+      onValue(categoriasRef, (snapshot) => {
+        // Limpiar selects manteniendo la primera opción
+        categoriaSelect.innerHTML = '<option value="">Sin categoría</option>';
+        categoryFilter.innerHTML = '<option value="">Todas las categorías</option>';
+        
+        if (snapshot.exists()) {
+          snapshot.forEach((child) => {
+            const data = child.val();
+            const key = child.key;
+            
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = data.nombre;
+            
+            categoriaSelect.appendChild(option.cloneNode(true));
+            categoryFilter.appendChild(option.cloneNode(true));
+          });
+        }
+      });
+    }
+
+    // Funciones para proveedores
+    window.abrirNuevoProveedor = () => {
+      const form = document.getElementById('supplierForm');
+      form.reset();
+      document.getElementById('supplierId').value = '';
+      document.getElementById('supplierModalLabel').textContent = 'Nuevo Proveedor';
+    };
+
+    function guardarProveedor() {
+      const supplierId = document.getElementById('supplierId').value;
+      const name = document.getElementById('supplierName').value;
+      const contact = document.getElementById('supplierContact').value;
+      const phone = document.getElementById('supplierPhone').value;
+      const email = document.getElementById('supplierEmail').value;
+      const address = document.getElementById('supplierAddress').value;
+
+      const proveedor = {
+        nombre: name,
+        contacto: contact,
+        telefono: phone,
+        email: email,
+        direccion: address,
+        fechaActualizacion: new Date().toISOString()
+      };
+
+      const userRef = `inventario/${currentUser.uid}/proveedores`;
+
+      if (supplierId) {
+        update(ref(db, `${userRef}/${supplierId}`), proveedor)
+          .then(() => mostrarMensaje('success', 'Proveedor actualizado correctamente'))
+          .catch(console.error);
+      } else {
+        const newRef = push(ref(db, userRef));
+        set(newRef, proveedor)
+          .then(() => mostrarMensaje('success', 'Proveedor creado correctamente'))
+          .catch(console.error);
+      }
+
+      document.getElementById('supplierModal').querySelector('.btn-close').click();
+    }
+
+    function cargarProveedores() {
+      const suppliersList = document.getElementById('suppliersList');
+      suppliersList.innerHTML = '<tr><td colspan="6" class="text-center">Cargando proveedores...</td></tr>';
+      
+      const userRef = `inventario/${currentUser.uid}/proveedores`;
+      const proveedoresRef = ref(db, userRef);
+      
+      onValue(proveedoresRef, (snapshot) => {
+        if (!snapshot.exists()) {
+          suppliersList.innerHTML = '<tr><td colspan="6" class="text-center">No hay proveedores registrados</td></tr>';
+          return;
+        }
+        
+        suppliersList.innerHTML = '';
+        
+        snapshot.forEach((child) => {
+          const data = child.val();
+          const key = child.key;
+          
+          suppliersList.innerHTML += `
+            <tr>
+              <td class="fw-bold">${data.nombre}</td>
+              <td>${data.contacto || 'No especificado'}</td>
+              <td>${data.telefono || 'No especificado'}</td>
+              <td>${data.email || 'No especificado'}</td>
+              <td>0</td> <!-- Aquí iría el conteo de productos -->
+              <td class="text-center">
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-gear"></i>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="editarProveedor('${key}', '${data.nombre}', '${data.contacto || ''}', '${data.telefono || ''}', '${data.email || ''}', '${data.direccion || ''}')">
+                      <i class="bi bi-pencil"></i> Editar
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="prepararEliminar('${key}', 'proveedor', '¿Estás seguro de eliminar el proveedor ${data.nombre}?')">
+                      <i class="bi bi-trash"></i> Eliminar
+                    </a></li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+      });
+    }
+
+window.editarProveedor = (id, nombre, contacto, telefono, email, direccion) => {
+      document.getElementById('supplierId').value = id;
+      document.getElementById('supplierName').value = nombre || '';
+      document.getElementById('supplierContact').value = contacto || '';
+      document.getElementById('supplierPhone').value = telefono || '';
+      document.getElementById('supplierEmail').value = email || '';
+      document.getElementById('supplierAddress').value = direccion || '';
+      document.getElementById('supplierModalLabel').textContent = 'Editar Proveedor';
+      new bootstrap.Modal(document.getElementById('supplierModal')).show();
+    };
+
+    function cargarProveedoresParaSelect() {
+      const proveedorSelect = document.getElementById('proveedor');
+      
+      const userRef = `inventario/${currentUser.uid}/proveedores`;
+      const proveedoresRef = ref(db, userRef);
+      
+      onValue(proveedoresRef, (snapshot) => {
+        proveedorSelect.innerHTML = '<option value="">Sin proveedor</option>';
+        
+        if (snapshot.exists()) {
+          snapshot.forEach((child) => {
+            const data = child.val();
+            const key = child.key;
+            
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = data.nombre;
+            
+            proveedorSelect.appendChild(option);
+          });
+        }
+      });
+    }
+
+    // Funciones para movimientos
+    window.abrirMovimiento = (productId, productName) => {
+      document.getElementById('movementProductId').value = productId;
+      document.getElementById('movementModalLabel').textContent = `Registrar movimiento: ${productName}`;
+      document.getElementById('movementDate').value = new Date().toISOString().slice(0, 16);
+      new bootstrap.Modal(document.getElementById('movementModal')).show();
+    };
+
+    function registrarMovimiento() {
+      const productId = document.getElementById('movementProductId').value;
+      const type = document.getElementById('movementType').value;
+      const quantity = parseInt(document.getElementById('movementQuantity').value);
+      const reason = document.getElementById('movementReason').value;
+      const date = document.getElementById('movementDate').value || new Date().toISOString();
+
+      if (!productId || !quantity) {
+        mostrarMensaje('error', 'Todos los campos son requeridos');
+        return;
+      }
+
+      // Obtener el producto actual para actualizar su cantidad
+      const productRef = ref(db, `inventario/${currentUser.uid}/productos/${productId}`);
+      
+      get(productRef).then((snapshot) => {
+        if (!snapshot.exists()) {
+          mostrarMensaje('error', 'Producto no encontrado');
+          return;
+        }
+
+        const product = snapshot.val();
+        let newQuantity = product.cantidad || 0;
+
+        // Actualizar cantidad según el tipo de movimiento
+        switch(type) {
+          case 'entrada':
+            newQuantity += quantity;
+            break;
+          case 'salida':
+            newQuantity -= quantity;
+            break;
+          case 'ajuste':
+            newQuantity = quantity;
+            break;
+        }
+
+        // Actualizar el producto
+        update(productRef, {
+          cantidad: newQuantity,
+          fechaActualizacion: new Date().toISOString()
+        });
+
+        // Registrar el movimiento en el historial
+        const movementRef = push(ref(db, `inventario/${currentUser.uid}/movimientos`));
+        
+        set(movementRef, {
+          productoId: productId,
+          productoNombre: product.nombre,
+          tipo: type,
+          cantidad: quantity,
+          cantidadAnterior: product.cantidad,
+          cantidadNueva: newQuantity,
+          razon: reason,
+          fecha: date,
+          usuario: currentUser.displayName || currentUser.email,
+          fechaRegistro: new Date().toISOString()
+        });
+
+        mostrarMensaje('success', 'Movimiento registrado correctamente');
+        document.getElementById('movementModal').querySelector('.btn-close').click();
+      }).catch(console.error);
+    }
+
+    // Funciones para eliminación
+    window.prepararEliminar = (id, tipo, mensaje) => {
+      elementoAEliminar = id;
+      tipoElementoAEliminar = tipo;
+      
+      document.getElementById('deleteMessage').textContent = mensaje;
+      document.getElementById('deleteWarning').style.display = 'block';
+      
+      new bootstrap.Modal(document.getElementById('confirmDeleteModal')).show();
+    };
+
+    function confirmarEliminacion() {
+      if (!elementoAEliminar || !tipoElementoAEliminar) return;
+      
+      let userRef;
+      
+      switch(tipoElementoAEliminar) {
+        case 'producto':
+          userRef = `inventario/${currentUser.uid}/productos/${elementoAEliminar}`;
+          break;
+        case 'categoria':
+          userRef = `inventario/${currentUser.uid}/categorias/${elementoAEliminar}`;
+          break;
+        case 'proveedor':
+          userRef = `inventario/${currentUser.uid}/proveedores/${elementoAEliminar}`;
+          break;
+        default:
+          return;
+      }
+      
+      remove(ref(db, userRef))
+        .then(() => {
+          mostrarMensaje('success', 'Elemento eliminado correctamente');
+          document.getElementById('confirmDeleteModal').querySelector('.btn-close').click();
+          
+          // Actualizar la vista correspondiente
+          switch(tipoElementoAEliminar) {
+            case 'producto':
+              cargarProductos();
+              break;
+            case 'categoria':
+              cargarCategorias();
+              cargarCategoriasParaSelect();
+              break;
+            case 'proveedor':
+              cargarProveedores();
+              cargarProveedoresParaSelect();
+              break;
+          }
+        })
+        .catch(console.error);
+      
+      elementoAEliminar = null;
+      tipoElementoAEliminar = null;
+    }
+
+    // Funciones para el dashboard
+    function refreshDashboard() {
+      const userRef = `inventario/${currentUser.uid}/productos`;
+      const productosRef = ref(db, userRef);
+      
+      onValue(productosRef, (snapshot) => {
+        let totalProducts = 0;
+        let totalValue = 0;
+        let lowStock = 0;
+        let outOfStock = 0;
+        let productsByCategory = {};
+        let lowStockProducts = [];
+        
+        snapshot.forEach((child) => {
+          const data = child.val();
+          const key = child.key;
+          
+          totalProducts++;
+          
+          const value = (data.cantidad || 0) * (data.precio || 0);
+          totalValue += value;
+          
+          // Contar productos con bajo stock
+          if (data.minimo && data.cantidad <= data.minimo) {
+            lowStock++;
+          }
+          
+          // Contar productos agotados
+          if (data.cantidad <= 0) {
+            outOfStock++;
+          }
+          
+          // Agrupar por categoría
+          const category = data.categoria || 'Sin categoría';
+          if (!productsByCategory[category]) {
+            productsByCategory[category] = {
+              count: 0,
+              value: 0
+            };
+          }
+          productsByCategory[category].count++;
+          productsByCategory[category].value += value;
+          
+          // Productos con bajo stock para la tabla
+          if ((data.minimo && data.cantidad <= data.minimo) || data.cantidad <= 0) {
+            lowStockProducts.push({
+              key,
+              ...data,
+              value
+            });
+          }
+        });
+        
+        // Actualizar contadores
+        document.getElementById('totalProducts').textContent = totalProducts;
+        document.getElementById('totalValue').textContent = `$${totalValue.toFixed(2)}`;
+        document.getElementById('lowStock').textContent = lowStock;
+        document.getElementById('outOfStock').textContent = outOfStock;
+        
+        // Actualizar tabla de productos con bajo stock
+        updateLowStockTable(lowStockProducts);
+        
+        // Actualizar gráficos
+        updateDashboardCharts(productsByCategory);
+      });
+    }
+
+    function updateLowStockTable(products) {
+      const lowStockList = document.getElementById('lowStockList');
+      
+      if (products.length === 0) {
+        lowStockList.innerHTML = '<tr><td colspan="6" class="text-center">No hay productos con bajo stock</td></tr>';
+        return;
+      }
+      
+      // Ordenar por nivel de stock (de menor a mayor)
+      products.sort((a, b) => a.cantidad - b.cantidad);
+      
+      lowStockList.innerHTML = '';
+      
+      products.forEach(producto => {
+        const rowClass = producto.cantidad <= 0 ? 'out-of-stock' : 'low-stock';
+        
+        lowStockList.innerHTML += `
+          <tr class="${rowClass}">
+            <td class="fw-bold">${producto.nombre}</td>
+            <td>${producto.categoria || 'Sin categoría'}</td>
+            <td>${producto.cantidad}</td>
+            <td>${producto.minimo || 'N/D'}</td>
+            <td>${producto.proveedor || 'N/D'}</td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-outline-primary" onclick="abrirMovimiento('${producto.key}', '${producto.nombre}')">
+                <i class="bi bi-plus-lg"></i> Reponer
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+function updateDashboardCharts(productsByCategory) {
+      const categories = Object.keys(productsByCategory);
+      const counts = categories.map(cat => productsByCategory[cat].count);
+      const values = categories.map(cat => productsByCategory[cat].value);
+      
+      // Gráfico de distribución por categoría
+      if (categoryChart) {
+        categoryChart.destroy();
+      }
+      
+      const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+      categoryChart = new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+          labels: categories,
+          datasets: [{
+            data: counts,
+            backgroundColor: [
+              '#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d', 
+              '#17a2b8', '#6610f2', '#fd7e14', '#20c997', '#e83e8c'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'right',
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.raw || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = Math.round((value / total) * 100);
+                  return `${label}: ${value} (${percentage}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      // Gráfico de movimiento de inventario (simulado)
+      if (inventoryChart) {
+        inventoryChart.destroy();
+      }
+      
+      const inventoryCtx = document.getElementById('inventoryChart').getContext('2d');
+      inventoryChart = new Chart(inventoryCtx, {
+        type: 'line',
+        data: {
+          labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+          datasets: [
+            {
+              label: 'Entradas',
+              data: [12, 19, 3, 5, 2, 3, 7, 15, 10, 8, 12, 5],
+              borderColor: '#28a745',
+              backgroundColor: 'rgba(40, 167, 69, 0.1)',
+              tension: 0.1,
+              fill: true
+            },
+            {
+              label: 'Salidas',
+              data: [8, 15, 7, 12, 9, 5, 4, 8, 6, 10, 15, 12],
+              borderColor: '#dc3545',
+              backgroundColor: 'rgba(220, 53, 69, 0.1)',
+              tension: 0.1,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    // Funciones para reportes
+    function generateReport() {
+      const reportType = document.getElementById('reportType').value;
+      
+      switch(reportType) {
+        case 'inventory':
+          generateInventoryReport();
+          break;
+        case 'movements':
+          generateMovementsReport();
+          break;
+        // Aquí se pueden agregar más tipos de reportes
+        default:
+          generateInventoryReport();
+      }
+    }
+
+    function generateInventoryReport() {
+      const userRef = `inventario/${currentUser.uid}/productos`;
+      const productosRef = ref(db, userRef);
+      
+      onValue(productosRef, (snapshot) => {
+        let totalProducts = 0;
+        let totalValue = 0;
+        let lowStock = 0;
+        let outOfStock = 0;
+        let productsByCategory = {};
+        let reportData = [];
+        
+        snapshot.forEach((child) => {
+          const data = child.val();
+          const key = child.key;
+          
+          totalProducts++;
+          
+          const value = (data.cantidad || 0) * (data.precio || 0);
+          totalValue += value;
+          
+          // Contar productos con bajo stock
+          if (data.minimo && data.cantidad <= data.minimo) {
+            lowStock++;
+          }
+          
+          // Contar productos agotados
+          if (data.cantidad <= 0) {
+            outOfStock++;
+          }
+          
+          // Agrupar por categoría
+          const category = data.categoria || 'Sin categoría';
+          if (!productsByCategory[category]) {
+            productsByCategory[category] = {
+              count: 0,
+              value: 0,
+              stock: 0
+            };
+          }
+          productsByCategory[category].count++;
+          productsByCategory[category].value += value;
+          productsByCategory[category].stock += data.cantidad || 0;
+          
+          // Datos para la tabla
+          reportData.push({
+            nombre: data.nombre,
+            categoria: category,
+            cantidad: data.cantidad || 0,
+            precio: data.precio || 0,
+            valor: value
+          });
+        });
+        
+        // Actualizar resumen
+        document.getElementById('reportTotalProducts').textContent = totalProducts;
+        document.getElementById('reportTotalValue').textContent = `$${totalValue.toFixed(2)}`;
+        document.getElementById('reportLowStock').textContent = lowStock;
+        document.getElementById('reportOutOfStock').textContent = outOfStock;
+        
+        // Actualizar tabla de datos
+        updateReportDataTable(reportData);
+        
+        // Actualizar gráficos
+        updateReportCharts(productsByCategory);
+      });
+    }
+
+    function updateReportDataTable(data) {
+      const reportDataTable = document.getElementById('reportDataTable');
+      reportDataTable.innerHTML = '';
+      
+      if (data.length === 0) {
+        reportDataTable.innerHTML = '<tr><td colspan="5" class="text-center">No hay datos para mostrar</td></tr>';
+        return;
+      }
+      
+      data.forEach(item => {
+        reportDataTable.innerHTML += `
+          <tr>
+            <td>${item.nombre}</td>
+            <td>${item.categoria}</td>
+            <td>${item.cantidad}</td>
+            <td>$${item.precio.toFixed(2)}</td>
+            <td>$${item.valor.toFixed(2)}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function updateReportCharts(productsByCategory) {
+      const categories = Object.keys(productsByCategory);
+      const counts = categories.map(cat => productsByCategory[cat].count);
+      const values = categories.map(cat => productsByCategory[cat].value);
+      const stocks = categories.map(cat => productsByCategory[cat].stock);
+      
+      // Gráfico de distribución por categoría
+      if (reportCategoryChart) {
+        reportCategoryChart.destroy();
+      }
+      
+      const categoryCtx = document.getElementById('reportCategoryChart').getContext('2d');
+      reportCategoryChart = new Chart(categoryCtx, {
+        type: 'pie',
+        data: {
+          labels: categories,
+          datasets: [{
+            data: counts,
+            backgroundColor: [
+              '#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d', 
+              '#17a2b8', '#6610f2', '#fd7e14', '#20c997', '#e83e8c'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'right',
+            }
+          }
+        }
+      });
+      
+      // Gráfico de valor por categoría
+      if (reportValueChart) {
+        reportValueChart.destroy();
+      }
+      
+      const valueCtx = document.getElementById('reportValueChart').getContext('2d');
+      reportValueChart = new Chart(valueCtx, {
+        type: 'bar',
+        data: {
+          labels: categories,
+          datasets: [{
+            label: 'Valor total',
+            data: values,
+            backgroundColor: '#007bff',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return '$' + value.toLocaleString();
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      // Gráfico de stock por categoría
+      if (reportStockChart) {
+        reportStockChart.destroy();
+      }
+      
+      const stockCtx = document.getElementById('reportStockChart').getContext('2d');
+      reportStockChart = new Chart(stockCtx, {
+        type: 'bar',
+        data: {
+          labels: categories,
+          datasets: [{
+            label: 'Stock total',
+            data: stocks,
+            backgroundColor: '#28a745',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    function generateMovementsReport() {
+      // Implementación para reporte de movimientos
+      // Similar a generateInventoryReport pero para movimientos
+    }
+
+function generateMovementsReport() {
+      // Implementación para reporte de movimientos
+      // Similar a generateInventoryReport pero para movimientos
+    }
+
+    // Funciones auxiliares
+    function mostrarMensaje(type, message) {
+      const toastContainer = document.getElementById('toastContainer') || createToastContainer();
+      
+      const toastEl = document.createElement('div');
+      toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+      toastEl.setAttribute('role', 'alert');
+      toastEl.setAttribute('aria-live', 'assertive');
+      toastEl.setAttribute('aria-atomic', 'true');
+      
+      toastEl.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">
+            ${message}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      `;
+      
+      toastContainer.appendChild(toastEl);
+      
+      const toast = new bootstrap.Toast(toastEl);
+      toast.show();
+      
+      // Eliminar el toast después de que se oculte
+      toastEl.addEventListener('hidden.bs.toast', () => {
+        toastEl.remove();
+      });
+    }
+
+    function createToastContainer() {
+      const container = document.createElement('div');
+      container.id = 'toastContainer';
+      container.className = 'position-fixed bottom-0 end-0 p-3';
+      container.style.zIndex = '11';
+      
+      document.body.appendChild(container);
+      return container;
+    }
+
+    window.showAllProducts = () => {
+      showSection('inventorySection');
+    };
+
+    window.verDetalleProducto = (productId) => {
+      // Implementación para mostrar detalles del producto
+      alert(`Detalles del producto ${productId}`);
+    };
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
